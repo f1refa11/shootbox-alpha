@@ -20,7 +20,7 @@ pygame.init()
 
 # screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
 # pygame.display.set_caption("ShootBox - Loading...")
-# pygame.mouse.set_visible(False)
+pygame.mouse.set_visible(False)
 # textRenderer = pygame.font.Font(None, 24)
 # loadingText = textRenderer.render("Loading", False, (255, 255, 255))
 # loadingText_rect = loadingText.get_rect()
@@ -78,7 +78,7 @@ fonts = []
 for x in range(1, 250):
 	fonts.append(pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), x))
 
-quality = 2
+quality = 5
 nickname = "FireFall"
 pressedKeys = {
 	'right': False,
@@ -125,28 +125,28 @@ availableResolutions = [
 ]
 
 
-cursor = pygame.image.load(os.path.join(guiTexturesPath, "cursor1024.png"))
-cursor = pygame.transform.scale(cursor, ((quality+1)*32, (quality+1)*32))
-cursor = pygame.transform.scale(cursor, (64, 64)).convert_alpha()
+cursor = pygame.image.load(os.path.join(guiTexturesPath, "cursor.png"))
+cursor = pygame.transform.smoothscale(cursor, (2**(5+quality), 2**(5+quality)))
+cursor = pygame.transform.smoothscale(cursor, (64, 64)).convert_alpha()
 
-gunCursor = pygame.image.load(os.path.join(guiTexturesPath, "gunCursor1024.png")).convert_alpha()
-gunCursor = pygame.transform.scale(gunCursor, ((quality+1)*32, (quality+1)*32))
+gunCursor = pygame.image.load(os.path.join(guiTexturesPath, "gunCursor.png")).convert_alpha()
+gunCursor = pygame.transform.scale(gunCursor, (2**(5+quality), 2**(5+quality)))
 gunCursor = pygame.transform.scale(gunCursor, (64, 64)).convert_alpha()
 
-woodPlanks = pygame.image.load(os.path.join(blocksTexturesPath, "woodPlanks1024.png"))
-woodPlanks = pygame.transform.scale(woodPlanks, ((quality+1)*32, (quality+1)*32))
+woodPlanks = pygame.image.load(os.path.join(blocksTexturesPath, "woodPlanks.png"))
+woodPlanks = pygame.transform.scale(woodPlanks, (2**(5+quality), 2**(5+quality)))
 woodPlanks = pygame.transform.scale(woodPlanks, (64, 64)).convert_alpha()
 
-tree = pygame.image.load(os.path.join(blocksTexturesPath, "tree1024.png"))
-tree = pygame.transform.scale(tree, ((quality+1)*32, (quality+1)*32))
+tree = pygame.image.load(os.path.join(blocksTexturesPath, "tree.png"))
+tree = pygame.transform.scale(tree, (2**(5+quality), 2**(5+quality)))
 tree = pygame.transform.scale(tree, (64, 64)).convert_alpha()
 
-hotBar = pygame.image.load(os.path.join(guiTexturesPath, "hotBar1024.png"))
-hotBar = pygame.transform.scale(hotBar, ((quality+1)*32, (quality+1)*32))
+hotBar = pygame.image.load(os.path.join(guiTexturesPath, "hotBar.png"))
+hotBar = pygame.transform.scale(hotBar, (2**(5+quality), 2**(5+quality)))
 hotBar = pygame.transform.scale(hotBar, (64, 64)).convert_alpha()
 
-gunItem = pygame.image.load(os.path.join(itemTexturesPath, "gun1024.png"))
-gunItem = pygame.transform.scale(gunItem, ((quality+1)*32, (quality+1)*32))
+gunItem = pygame.image.load(os.path.join(itemTexturesPath, "gun.png"))
+gunItem = pygame.transform.scale(gunItem, (2**(5+quality), 2**(5+quality)))
 gunItem = pygame.transform.scale(gunItem, (64, 64)).convert_alpha()
 
 logo = pygame.image.load(os.path.join(guiTexturesPath, "logo.png")).convert_alpha()
@@ -172,8 +172,13 @@ def renderText(text, size, color, dest=None, align=None):
 
 class Player(object):
 	def __init__(self):
-		self.defaultNormal = pygame.image.load(os.path.join(defaultSkinPath, "1024.png")).convert_alpha(),
-		self.defaultGun = pygame.image.load(os.path.join(defaultSkinPath, "gun1024.png")).convert_alpha()
+		self.defaultNormal = pygame.image.load(os.path.join(defaultSkinPath, "idle.png"))
+		self.defaultNormal = pygame.transform.scale(self.defaultNormal, (2**(5+quality), 2**(5+quality)))
+		self.defaultNormal = pygame.transform.scale(self.defaultNormal, (64, 64)).convert_alpha()
+
+		self.defaultGunHold = pygame.image.load(os.path.join(defaultSkinPath, "gunHold.png"))
+		self.defaultGunHold = pygame.transform.scale(self.defaultGunHold, (2**(5+quality), 2**(5+quality)))
+		self.defaultGunHold = pygame.transform.scale(self.defaultGunHold, (64, 64)).convert_alpha()
 		self.skin = "default"
 		self.currentSkinTexture = None
 		self.x = gameSurface.get_width()//2
@@ -255,11 +260,11 @@ class Player(object):
 		for x in range(len(self.inventory)):
 			if self.selectedSlot == self.inventory[x]["slot"]:
 				if self.inventory[x]["item"] == "gun":
-					self.currentSkinTexture = self.defaultGun[quality-1]
+					self.currentSkinTexture = self.defaultGun
 				else:
-					self.currentSkinTexture = self.defaultNormal[quality-1]
+					self.currentSkinTexture = self.defaultNormal
 			else:
-				self.currentSkinTexture = self.defaultNormal[quality-1]
+				self.currentSkinTexture = self.defaultNormal
 		self.angle = math.atan2(mouseY-screen.get_rect().centery, mouseX-screen.get_rect().centerx)
 		self.angle = -math.degrees(self.angle)
 		self.currentSkinTexture = pygame.transform.scale(self.currentSkinTexture, (64, 64))
@@ -272,34 +277,33 @@ class Player(object):
 		self.nicknameDisplay_rect.y = self.rect.y-24
 		gameSurface.blit(self.nicknameDisplay, self.nicknameDisplay_rect)
 
-class Bullet(object):
-	def __init__(self, angle, x, y):
-		self.angle = angle
-		self.texture = [
-			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet32.png")).convert_alpha(), (32, 16)), self.angle, 1),
-			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet64.png")).convert_alpha(), (32, 16)), self.angle, 1),
-			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet128.png")).convert_alpha(), (32, 16)), self.angle, 1),
-			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet256.png")).convert_alpha(), (32, 16)), self.angle, 1),
-			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet512.png")).convert_alpha(), (32, 16)), self.angle, 1),
-			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet1024.png")).convert_alpha(), (32, 16)), self.angle, 1),
-		]
-		self.rect = self.texture[quality-1].get_rect(center = (x, y))
-		self.pos = (x, y)
-	def calculate_new_xy(self, old_xy, speed, angle_in_degrees):
-		self.move_vec = pygame.math.Vector2()
-		self.move_vec.from_polar((speed, angle_in_degrees))
-		return old_xy + self.move_vec
-	def render(self):
-		self.pos = self.calculate_new_xy(self.pos, 3, -self.angle)
-		self.rect.center = round(self.pos[0])+16, round(self.pos[1])+8
-		gameSurface.blit(self.texture[quality-1], self.pos)
+# class Bullet(object):
+# 	def __init__(self, angle, x, y):
+# 		self.angle = angle
+# 		self.texture = [
+# 			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet32.png")).convert_alpha(), (32, 16)), self.angle, 1),
+# 			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet64.png")).convert_alpha(), (32, 16)), self.angle, 1),
+# 			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet128.png")).convert_alpha(), (32, 16)), self.angle, 1),
+# 			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet256.png")).convert_alpha(), (32, 16)), self.angle, 1),
+# 			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet512.png")).convert_alpha(), (32, 16)), self.angle, 1),
+# 			pygame.transform.rotozoom(pygame.transform.scale(pygame.image.load(os.path.join(itemTexturesPath, "bullet1024.png")).convert_alpha(), (32, 16)), self.angle, 1),
+# 		]
+# 		self.rect = self.texture.get_rect(center = (x, y))
+# 		self.pos = (x, y)
+# 	def calculate_new_xy(self, old_xy, speed, angle_in_degrees):
+# 		self.move_vec = pygame.math.Vector2()
+# 		self.move_vec.from_polar((speed, angle_in_degrees))
+# 		return old_xy + self.move_vec
+# 	def render(self):
+# 		self.pos = self.calculate_new_xy(self.pos, 3, -self.angle)
+# 		self.rect.center = round(self.pos[0])+16, round(self.pos[1])+8
+# 		gameSurface.blit(self.texture, self.pos)
 
 class Cube(object):
 	def __init__(self):
 		self.x = random.randint(0, screen.get_width())
 		self.y = screen.get_width()-24
 		self.size = random.randint(35,100)
-		# self.size = 200
 		self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
 		self.angle = 0
 		self.rotateSpeed = random.uniform(0.1, 1.5)
@@ -336,8 +340,15 @@ class Button(object):
 		self.row = row
 		self.textRenderer = fonts[24].render((str(self.text)), True, (255, 255, 255))
 		self.textRenderer_rect = self.textRenderer.get_rect()
-		self.textureDefault = pygame.image.load(os.path.join(guiTexturesPath, "buttonDefault1024.png")).convert_alpha()
-		self.textureHovered = pygame.image.load(os.path.join(guiTexturesPath, "buttonHovered1024.png")).convert_alpha()
+
+		self.textureDefault = pygame.image.load(os.path.join(guiTexturesPath, "buttonDefault.png"))
+		self.textureDefault = pygame.transform.smoothscale(self.textureDefault, (2**(7+quality), 2**(7+quality)))
+		self.textureDefault = pygame.transform.smoothscale(self.textureDefault, (256, 64)).convert_alpha()
+
+		self.textureHovered = pygame.image.load(os.path.join(guiTexturesPath, "buttonHovered.png"))
+		self.textureHovered = pygame.transform.smoothscale(self.textureHovered, (2**(7+quality), 2**(7+quality)))
+		self.textureHovered = pygame.transform.smoothscale(self.textureHovered, (256, 64)).convert_alpha()
+
 		self.state = "default"
 		self.rect = pygame.Rect(0, 0, 256, 64)
 		self.rect.centerx = gameSurface.get_width() // 2 + (128 * self.row)
@@ -348,31 +359,9 @@ class Button(object):
 		else:
 			self.state = "default"
 		if self.state == "default":
-			if quality == 1:
-				guiSurface.blit(pygame.transform.scale(self.textures[0], (256, 64)), self.rect)
-			if quality == 2:
-				guiSurface.blit(pygame.transform.scale(self.textures[1], (256, 64)), self.rect)
-			if quality == 3:
-				guiSurface.blit(pygame.transform.scale(self.textures[2], (256, 64)), self.rect)
-			if quality == 4:
-				guiSurface.blit(pygame.transform.scale(self.textures[3], (256, 64)), self.rect)
-			if quality == 5:
-				guiSurface.blit(pygame.transform.scale(self.textures[4], (256, 64)), self.rect)
-			if quality == 6:
-				guiSurface.blit(pygame.transform.scale(self.textures[5], (256, 64)), self.rect)
+			guiSurface.blit(pygame.transform.scale(self.textureDefault, (256, 64)), self.rect)
 		else:
-			if quality == 1:
-				guiSurface.blit(pygame.transform.scale(self.textures[6], (256, 64)), self.rect)
-			if quality == 2:
-				guiSurface.blit(pygame.transform.scale(self.textures[7], (256, 64)), self.rect)
-			if quality == 3:
-				guiSurface.blit(pygame.transform.scale(self.textures[8], (256, 64)), self.rect)
-			if quality == 4:
-				guiSurface.blit(pygame.transform.scale(self.textures[9], (256, 64)), self.rect)
-			if quality == 5:
-				guiSurface.blit(pygame.transform.scale(self.textures[10], (256, 64)), self.rect)
-			if quality == 6:
-				guiSurface.blit(pygame.transform.scale(self.textures[11], (256, 64)), self.rect)
+			guiSurface.blit(pygame.transform.scale(self.textureHovered, (256, 64)), self.rect)
 		guiSurface.blit(self.textRenderer, (self.rect.centerx-self.textRenderer_rect.centerx, self.rect.centery-self.textRenderer_rect.centery-8))
 		self.rect.centerx = screen.get_width()/2 + (128 * self.row)
 
@@ -432,7 +421,7 @@ def menu():
 		
 		renderText("version: 0.3", 12, (255, 255, 255), ("center", "bottom"))
 
-		guiSurface.blit(pygame.transform.scale(cursor[quality-1], (64, 64)), pygame.mouse.get_pos())
+		guiSurface.blit(pygame.transform.scale(cursor, (64, 64)), pygame.mouse.get_pos())
 			
 		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
 
@@ -471,7 +460,7 @@ def gameSettings():
 				pass
 			i += 1
 
-		screen.blit(pygame.transform.scale(cursor[quality-1], (64, 64)), pygame.mouse.get_pos())
+		screen.blit(pygame.transform.scale(cursor, (64, 64)), pygame.mouse.get_pos())
 		
 		pygame.display.update()
 
@@ -592,7 +581,7 @@ def game():
 
 		for b in range(len(testMap)):
 			if testMap[b]["block"] == "wood_planks":
-				gameSurface.blit(woodPlanks[quality-1], (testMap[b]["pos"][0]*64, testMap[b]["pos"][1]*64))
+				gameSurface.blit(woodPlanks, (testMap[b]["pos"][0]*64, testMap[b]["pos"][1]*64))
 
 		i = 0
 		while i <= len(shotBullets):
@@ -608,7 +597,7 @@ def game():
 
 		for b in range(len(testMap)):
 			if testMap[b]["block"] == "tree":
-				gameSurface.blit(tree[quality-1], (testMap[b]["pos"][0]*64, testMap[b]["pos"][1]*64))
+				gameSurface.blit(tree, (testMap[b]["pos"][0]*64, testMap[b]["pos"][1]*64))
 
 		s = 0
 		c = 0
@@ -623,12 +612,12 @@ def game():
 					c += 1
 
 		for h in range(8):
-			guiSurface.blit(hotBar[quality-1], (guiSurface.get_width()//2-256+h*64, guiSurface.get_height()-64))
+			guiSurface.blit(hotBar, (guiSurface.get_width()//2-256+h*64, guiSurface.get_height()-64))
 		for x in range(len(player.inventory)):
 			if player.inventory[x]["item"] == "gun":
-				guiSurface.blit(gunItem[quality-1], (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64, guiSurface.get_height()-64))
+				guiSurface.blit(gunItem, (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64, guiSurface.get_height()-64))
 			if player.inventory[x]["item"] == "wood_planks":
-				guiSurface.blit(pygame.transform.scale(woodPlanks[quality-1], (48, 48)), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+8, guiSurface.get_height()-64+8))
+				guiSurface.blit(pygame.transform.scale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+8, guiSurface.get_height()-64+8))
 				renderText(str(player.inventory[x]["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+32, guiSurface.get_height()-64+32))
 		pygame.draw.rect(guiSurface, (255, 0, 0), (guiSurface.get_width()//2-256+player.selectedSlot*64, guiSurface.get_height()-64, 64, 64), 3)
 
@@ -637,9 +626,9 @@ def game():
 				if player.inventory[x]["item"] == "gun":
 					guiSurface.blit(pygame.transform.scale(gunCursor, (64, 64)), (pygame.mouse.get_pos()[0]-32, pygame.mouse.get_pos()[1]-32))
 				else:
-					guiSurface.blit(pygame.transform.scale(cursor[quality-1], (64, 64)), pygame.mouse.get_pos())
+					guiSurface.blit(pygame.transform.scale(cursor, (64, 64)), pygame.mouse.get_pos())
 			else:
-				guiSurface.blit(pygame.transform.scale(cursor[quality-1], (64, 64)), pygame.mouse.get_pos())
+				guiSurface.blit(pygame.transform.scale(cursor, (64, 64)), pygame.mouse.get_pos())
 
 		renderText("FPS: "+str(int(clock.get_fps())), 36, (255, 255, 255), (5,5))
 
