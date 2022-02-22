@@ -130,24 +130,24 @@ cursor = pygame.transform.smoothscale(cursor, (2**(5+quality), 2**(5+quality)))
 cursor = pygame.transform.smoothscale(cursor, (64, 64)).convert_alpha()
 
 gunCursor = pygame.image.load(os.path.join(guiTexturesPath, "gunCursor.png")).convert_alpha()
-gunCursor = pygame.transform.scale(gunCursor, (2**(5+quality), 2**(5+quality)))
-gunCursor = pygame.transform.scale(gunCursor, (64, 64)).convert_alpha()
+gunCursor = pygame.transform.smoothscale(gunCursor, (2**(5+quality), 2**(5+quality)))
+gunCursor = pygame.transform.smoothscale(gunCursor, (64, 64)).convert_alpha()
 
 woodPlanks = pygame.image.load(os.path.join(blocksTexturesPath, "woodPlanks.png"))
-woodPlanks = pygame.transform.scale(woodPlanks, (2**(5+quality), 2**(5+quality)))
-woodPlanks = pygame.transform.scale(woodPlanks, (64, 64)).convert_alpha()
+woodPlanks = pygame.transform.smoothscale(woodPlanks, (2**(5+quality), 2**(5+quality)))
+woodPlanks = pygame.transform.smoothscale(woodPlanks, (64, 64)).convert_alpha()
 
 tree = pygame.image.load(os.path.join(blocksTexturesPath, "tree.png"))
-tree = pygame.transform.scale(tree, (2**(5+quality), 2**(5+quality)))
-tree = pygame.transform.scale(tree, (64, 64)).convert_alpha()
+tree = pygame.transform.smoothscale(tree, (2**(5+quality), 2**(5+quality)))
+tree = pygame.transform.smoothscale(tree, (64, 64)).convert_alpha()
 
 hotBar = pygame.image.load(os.path.join(guiTexturesPath, "hotBar.png"))
-hotBar = pygame.transform.scale(hotBar, (2**(5+quality), 2**(5+quality)))
-hotBar = pygame.transform.scale(hotBar, (64, 64)).convert_alpha()
+hotBar = pygame.transform.smoothscale(hotBar, (2**(5+quality), 2**(5+quality)))
+hotBar = pygame.transform.smoothscale(hotBar, (64, 64)).convert_alpha()
 
 gunItem = pygame.image.load(os.path.join(itemTexturesPath, "gun.png"))
-gunItem = pygame.transform.scale(gunItem, (2**(5+quality), 2**(5+quality)))
-gunItem = pygame.transform.scale(gunItem, (64, 64)).convert_alpha()
+gunItem = pygame.transform.smoothscale(gunItem, (2**(5+quality), 2**(5+quality)))
+gunItem = pygame.transform.smoothscale(gunItem, (64, 64)).convert_alpha()
 
 logo = pygame.image.load(os.path.join(guiTexturesPath, "logo.png")).convert_alpha()
 
@@ -173,12 +173,12 @@ def renderText(text, size, color, dest=None, align=None):
 class Player(object):
 	def __init__(self):
 		self.defaultNormal = pygame.image.load(os.path.join(defaultSkinPath, "idle.png"))
-		self.defaultNormal = pygame.transform.scale(self.defaultNormal, (2**(5+quality), 2**(5+quality)))
-		self.defaultNormal = pygame.transform.scale(self.defaultNormal, (64, 64)).convert_alpha()
+		self.defaultNormal = pygame.transform.smoothscale(self.defaultNormal, (2**(5+quality), 2**(5+quality)))
+		self.defaultNormal = pygame.transform.smoothscale(self.defaultNormal, (64, 64)).convert_alpha()
 
 		self.defaultGunHold = pygame.image.load(os.path.join(defaultSkinPath, "gunHold.png"))
-		self.defaultGunHold = pygame.transform.scale(self.defaultGunHold, (2**(5+quality), 2**(5+quality)))
-		self.defaultGunHold = pygame.transform.scale(self.defaultGunHold, (64, 64)).convert_alpha()
+		self.defaultGunHold = pygame.transform.smoothscale(self.defaultGunHold, (2**(5+quality), 2**(5+quality)))
+		self.defaultGunHold = pygame.transform.smoothscale(self.defaultGunHold, (64, 64)).convert_alpha()
 		self.skin = "default"
 		self.currentSkinTexture = None
 		self.x = gameSurface.get_width()//2
@@ -267,7 +267,7 @@ class Player(object):
 				self.currentSkinTexture = self.defaultNormal
 		self.angle = math.atan2(mouseY-screen.get_rect().centery, mouseX-screen.get_rect().centerx)
 		self.angle = -math.degrees(self.angle)
-		self.currentSkinTexture = pygame.transform.scale(self.currentSkinTexture, (64, 64))
+		self.currentSkinTexture = pygame.transform.smoothscale(self.currentSkinTexture, (64, 64))
 		self.currentSkinTexture = pygame.transform.rotozoom(self.currentSkinTexture, self.angle-90, 1)
 		self.newRect = self.currentSkinTexture.get_rect()
 		self.newRect.center = self.oldCenter
@@ -359,9 +359,9 @@ class Button(object):
 		else:
 			self.state = "default"
 		if self.state == "default":
-			guiSurface.blit(pygame.transform.scale(self.textureDefault, (256, 64)), self.rect)
+			guiSurface.blit(self.textureDefault, self.rect)
 		else:
-			guiSurface.blit(pygame.transform.scale(self.textureHovered, (256, 64)), self.rect)
+			guiSurface.blit(self.textureHovered, self.rect)
 		guiSurface.blit(self.textRenderer, (self.rect.centerx-self.textRenderer_rect.centerx, self.rect.centery-self.textRenderer_rect.centery-8))
 		self.rect.centerx = screen.get_width()/2 + (128 * self.row)
 
@@ -421,7 +421,7 @@ def menu():
 		
 		renderText("version: 0.3", 12, (255, 255, 255), ("center", "bottom"))
 
-		guiSurface.blit(pygame.transform.scale(cursor, (64, 64)), pygame.mouse.get_pos())
+		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
 		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
 
@@ -460,7 +460,7 @@ def gameSettings():
 				pass
 			i += 1
 
-		screen.blit(pygame.transform.scale(cursor, (64, 64)), pygame.mouse.get_pos())
+		screen.blit(cursor, pygame.mouse.get_pos())
 		
 		pygame.display.update()
 
@@ -617,18 +617,18 @@ def game():
 			if player.inventory[x]["item"] == "gun":
 				guiSurface.blit(gunItem, (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64, guiSurface.get_height()-64))
 			if player.inventory[x]["item"] == "wood_planks":
-				guiSurface.blit(pygame.transform.scale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+8, guiSurface.get_height()-64+8))
+				guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+8, guiSurface.get_height()-64+8))
 				renderText(str(player.inventory[x]["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+32, guiSurface.get_height()-64+32))
 		pygame.draw.rect(guiSurface, (255, 0, 0), (guiSurface.get_width()//2-256+player.selectedSlot*64, guiSurface.get_height()-64, 64, 64), 3)
 
 		for x in range(len(player.inventory)):
 			if player.selectedSlot == player.inventory[x]["slot"]:
 				if player.inventory[x]["item"] == "gun":
-					guiSurface.blit(pygame.transform.scale(gunCursor, (64, 64)), (pygame.mouse.get_pos()[0]-32, pygame.mouse.get_pos()[1]-32))
+					guiSurface.blit(gunCursor, (pygame.mouse.get_pos()[0]-32, pygame.mouse.get_pos()[1]-32))
 				else:
-					guiSurface.blit(pygame.transform.scale(cursor, (64, 64)), pygame.mouse.get_pos())
+					guiSurface.blit(cursor, pygame.mouse.get_pos())
 			else:
-				guiSurface.blit(pygame.transform.scale(cursor, (64, 64)), pygame.mouse.get_pos())
+				guiSurface.blit(cursor, pygame.mouse.get_pos())
 
 		renderText("FPS: "+str(int(clock.get_fps())), 36, (255, 255, 255), (5,5))
 
