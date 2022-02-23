@@ -78,7 +78,7 @@ fonts = []
 for x in range(1, 250):
 	fonts.append(pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), x))
 
-quality = 5
+quality = 0
 nickname = "FireFall"
 pressedKeys = {
 	'right': False,
@@ -149,6 +149,11 @@ gunItem = pygame.image.load(os.path.join(itemTexturesPath, "gun.png"))
 gunItem = pygame.transform.smoothscale(gunItem, (2**(5+quality), 2**(5+quality)))
 gunItem = pygame.transform.smoothscale(gunItem, (64, 64)).convert_alpha()
 
+inventoryGui = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
+inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
+print(inventoryGui.get_rect())
+inventoryGui = pygame.transform.smoothscale(inventoryGui, (640, 512))
+
 logo = pygame.image.load(os.path.join(guiTexturesPath, "logo.png")).convert_alpha()
 
 def renderText(text, size, color, dest=None, align=None):
@@ -197,7 +202,7 @@ class Player(object):
 		self.nicknameDisplay = fonts[24].render(nickname, True, (255, 255, 255))
 		self.nicknameDisplay_rect = self.nicknameDisplay.get_rect()
 		self.nicknameDisplay_rect.centerx = self.rect.centerx
-		self.nicknameDisplay_rect.y = self.rect.y-24
+		self.nicknameDisplay_rect.y = self.rect.y-32
 		self.angle = None
 		self.relX = None
 		self.relY = None
@@ -260,7 +265,7 @@ class Player(object):
 		for x in range(len(self.inventory)):
 			if self.selectedSlot == self.inventory[x]["slot"]:
 				if self.inventory[x]["item"] == "gun":
-					self.currentSkinTexture = self.defaultGun
+					self.currentSkinTexture = self.defaultGunHold
 				else:
 					self.currentSkinTexture = self.defaultNormal
 			else:
@@ -274,7 +279,7 @@ class Player(object):
 		gameSurface.blit(self.currentSkinTexture, self.newRect)
 		self.nicknameDisplay_rect = self.nicknameDisplay.get_rect()
 		self.nicknameDisplay_rect.centerx = self.rect.centerx
-		self.nicknameDisplay_rect.y = self.rect.y-24
+		self.nicknameDisplay_rect.y = self.rect.y-32
 		gameSurface.blit(self.nicknameDisplay, self.nicknameDisplay_rect)
 
 # class Bullet(object):
@@ -468,13 +473,13 @@ def game():
 	pygame.display.set_caption("ShootBox - Game")
 	global quality, screen, guiSurface, gameSurface, gameSurface_Rect
 	last = pygame.time.get_ticks()
-	for x in range(random.randint(2, 15)):
-		randomPos = [random.randint(0,16), random.randint(0,16)]
-		testMap.append(
-			{"block": "tree", "pos": [randomPos[0], randomPos[1]]}
-		)
-		collisionRects.append(pygame.Rect(randomPos[0]*64+24, randomPos[1]*64+24, 16, 16))
-	print(collisionRects)
+	# for x in range(random.randint(2, 15)):
+	# 	randomPos = [random.randint(0,16), random.randint(0,16)]
+	# 	testMap.append(
+	# 		{"block": "tree", "pos": [randomPos[0], randomPos[1]]}
+	# 	)
+	# 	collisionRects.append(pygame.Rect(randomPos[0]*64+24, randomPos[1]*64+24, 16, 16))
+	# print(collisionRects)
 
 	while 1:
 		clock.tick(60)
@@ -514,21 +519,22 @@ def game():
 							if player.inventory[i]["item"] == "gun":
 								pass
 							elif player.inventory[i]["item"] == "wood_planks":
-								sameBlock = False
-								for x in range(len(testMap)):
+								if player.inventory[i]["amount"] != 0:
 									sameBlock = False
-									if testMap[x]["pos"] == [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.x)//64]:
-										sameBlock = True
-										break
-									
-								if not sameBlock:
-									collisionRects.append(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
-									testMap.append({"block": "wood_planks", "pos": [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]})
-									player.inventory[i]["amount"] -= 1
-								if player.rect.colliderect(collisionRects[-1]):
-									collisionRects.remove(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
-									testMap.pop(-1)
-									player.inventory[i]["amount"] += 1
+									for x in range(len(testMap)):
+										sameBlock = False
+										if testMap[x]["pos"] == [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]:
+											sameBlock = True
+											break
+										
+									if not sameBlock:
+										collisionRects.append(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
+										testMap.append({"block": "wood_planks", "pos": [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]})
+										player.inventory[i]["amount"] -= 1
+									if player.rect.colliderect(collisionRects[-1]):
+										collisionRects.remove(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
+										testMap.pop(-1)
+										player.inventory[i]["amount"] += 1
 				if event.button == 1:
 					for x in range(len(player.inventory)):
 						if player.selectedSlot == player.inventory[x]["slot"]:
@@ -617,8 +623,9 @@ def game():
 			if player.inventory[x]["item"] == "gun":
 				guiSurface.blit(gunItem, (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64, guiSurface.get_height()-64))
 			if player.inventory[x]["item"] == "wood_planks":
-				guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+8, guiSurface.get_height()-64+8))
-				renderText(str(player.inventory[x]["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+32, guiSurface.get_height()-64+32))
+				if player.inventory[x]["amount"] != 0:
+					guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+8, guiSurface.get_height()-64+8))
+					renderText(str(player.inventory[x]["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+32, guiSurface.get_height()-64+32))
 		pygame.draw.rect(guiSurface, (255, 0, 0), (guiSurface.get_width()//2-256+player.selectedSlot*64, guiSurface.get_height()-64, 64, 64), 3)
 
 		for x in range(len(player.inventory)):
