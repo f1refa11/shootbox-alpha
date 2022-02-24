@@ -151,7 +151,6 @@ gunItem = pygame.transform.smoothscale(gunItem, (64, 64)).convert_alpha()
 
 inventoryGui = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
-print(inventoryGui.get_rect())
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (640, 512))
 
 logo = pygame.image.load(os.path.join(guiTexturesPath, "logo.png")).convert_alpha()
@@ -192,7 +191,7 @@ class Player(object):
 		self.rect.center = guiSurface.get_rect().center
 		self.speed = 3
 		self.inventory = [
-			{"item": "wood_planks", "amount": 24, "slot": 0},
+			{"item": "wood_planks", "amount": 64, "slot": 0},
 			{"item": "gun", "slot": 1}
 		]
 		self.selectedSlot = 0
@@ -391,7 +390,7 @@ def menu():
 		if now - last >= cubeCooldown:
 			last = now
 			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(300, 500)
+			cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -520,21 +519,22 @@ def game():
 								pass
 							elif player.inventory[i]["item"] == "wood_planks":
 								if player.inventory[i]["amount"] != 0:
-									sameBlock = False
-									for x in range(len(testMap)):
+									if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
 										sameBlock = False
-										if testMap[x]["pos"] == [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]:
-											sameBlock = True
-											break
-										
-									if not sameBlock:
-										collisionRects.append(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
-										testMap.append({"block": "wood_planks", "pos": [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]})
-										player.inventory[i]["amount"] -= 1
-									if player.rect.colliderect(collisionRects[-1]):
-										collisionRects.remove(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
-										testMap.pop(-1)
-										player.inventory[i]["amount"] += 1
+										for x in range(len(testMap)):
+											sameBlock = False
+											if testMap[x]["pos"] == [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]:
+												sameBlock = True
+												break
+											
+										if not sameBlock:
+											collisionRects.append(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
+											testMap.append({"block": "wood_planks", "pos": [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]})
+											player.inventory[i]["amount"] -= 1
+										if player.rect.colliderect(collisionRects[-1]):
+											collisionRects.remove(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
+											testMap.pop(-1)
+											player.inventory[i]["amount"] += 1
 				if event.button == 1:
 					for x in range(len(player.inventory)):
 						if player.selectedSlot == player.inventory[x]["slot"]:
