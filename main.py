@@ -78,7 +78,7 @@ fonts = []
 for x in range(1, 250):
 	fonts.append(pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), x))
 
-quality = 0
+quality = 5
 nickname = "FireFall"
 pressedKeys = {
 	'right': False,
@@ -153,6 +153,13 @@ inventoryGui = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (640, 512))
 
+destroyBlock = []
+for load in range(16):
+	texture = pygame.image.load(os.path.join(blocksTexturesPath, "blockDestroy_"+str(load)+".png"))
+	texture = pygame.transform.smoothscale(texture, (2**(5+quality), 2**(5+quality)))
+	texture = pygame.transform.smoothscale(texture, (64, 64)).convert_alpha()
+	destroyBlock.append(texture)
+
 logo = pygame.image.load(os.path.join(guiTexturesPath, "logo.png")).convert_alpha()
 
 def renderText(text, size, color, dest=None, align=None):
@@ -191,7 +198,7 @@ class Player(object):
 		self.rect.center = guiSurface.get_rect().center
 		self.speed = 3
 		self.inventory = [
-			{"item": "wood_planks", "amount": 64, "slot": 0},
+			{"item": "wood_planks", "amount": 436194124, "slot": 0},
 			{"item": "gun", "slot": 1}
 		]
 		self.selectedSlot = 0
@@ -472,13 +479,14 @@ def game():
 	pygame.display.set_caption("ShootBox - Game")
 	global quality, screen, guiSurface, gameSurface, gameSurface_Rect
 	last = pygame.time.get_ticks()
-	# for x in range(random.randint(2, 15)):
-	# 	randomPos = [random.randint(0,16), random.randint(0,16)]
-	# 	testMap.append(
-	# 		{"block": "tree", "pos": [randomPos[0], randomPos[1]]}
-	# 	)
-	# 	collisionRects.append(pygame.Rect(randomPos[0]*64+24, randomPos[1]*64+24, 16, 16))
-	# print(collisionRects)
+	for x in range(random.randint(2, 15)):
+		randomPos = [random.randint(0,16), random.randint(0,16)]
+		testMap.append(
+			{"block": "tree", "pos": [randomPos[0], randomPos[1]]}
+		)
+		collisionRects.append(pygame.Rect(randomPos[0]*64+24, randomPos[1]*64+24, 16, 16))
+
+	mousePressed = False
 
 	while 1:
 		clock.tick(60)
@@ -513,53 +521,36 @@ def game():
 					pressedKeys["right"] = False
 			elif event.type == MOUSEBUTTONDOWN:
 				if event.button == 3:
-					for i in range(len(player.inventory)):
-						if player.selectedSlot == player.inventory[i]["slot"]:
-							if player.inventory[i]["item"] == "gun":
-								pass
-							elif player.inventory[i]["item"] == "wood_planks":
-								if player.inventory[i]["amount"] != 0:
-									if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
-										sameBlock = False
-										for x in range(len(testMap)):
-											sameBlock = False
-											if testMap[x]["pos"] == [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]:
-												sameBlock = True
-												break
-											
-										if not sameBlock:
-											collisionRects.append(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
-											testMap.append({"block": "wood_planks", "pos": [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]})
-											player.inventory[i]["amount"] -= 1
-										if player.rect.colliderect(collisionRects[-1]):
-											collisionRects.remove(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
-											testMap.pop(-1)
-											player.inventory[i]["amount"] += 1
+					mousePressed = "right"
 				if event.button == 1:
-					for x in range(len(player.inventory)):
-						if player.selectedSlot == player.inventory[x]["slot"]:
-							if player.inventory[x]["item"] == "gun":
-								# shotBullets.append(Bullet(player.angle, player.rect.x, player.rect.y))
-								pass
-						else:
-							i = 0
-							while i <= len(testMap):
-								try:
-									if testMap[i]["pos"] == [(event.pos[0]-gameSurface_Rect.x)//64, (event.pos[1]-gameSurface_Rect.y)//64]:
-										if testMap[i]['block'] == "wood_planks":
-											collisionRects.remove(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64, (event.pos[1]-gameSurface_Rect.y)//64*64, 64, 64))
-											testMap.pop(i)
-											i -= 1
-										elif testMap[i]["block"] == "tree":
-											collisionRects.remove(pygame.Rect((event.pos[0]-gameSurface_Rect.x)//64*64+24, (event.pos[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
-											testMap.pop(i)
-											i -= 1
-								except IndexError:
+					mousePressed = "left"
+					now = pygame.time.get_ticks()
+					if now - last >= 250:
+						last = now
+						for x in range(len(player.inventory)):
+							if player.selectedSlot == player.inventory[x]["slot"]:
+								if player.inventory[x]["item"] == "gun":
+									# shotBullets.append(Bullet(player.angle, player.rect.x, player.rect.y))
 									pass
-								except ValueError:
-									pass
-								i += 1
-									
+							else:
+								if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+									i = 0
+									while i <= len(testMap):
+										try:
+											if testMap[i]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+												if testMap[i]['block'] == "wood_planks":
+													collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+													testMap.pop(i)
+													i -= 1
+												elif testMap[i]["block"] == "tree":
+													collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
+													testMap.pop(i)
+													i -= 1
+										except IndexError:
+											pass
+										except ValueError:
+											pass
+										i += 1
 				if event.button == 4:
 					if player.selectedSlot == 7:
 						player.selectedSlot = 0
@@ -570,11 +561,70 @@ def game():
 						player.selectedSlot = 7
 					else:
 						player.selectedSlot -= 1
+			elif event.type == MOUSEBUTTONUP:
+				mousePressed = False
 			elif event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
 				guiSurface.convert_alpha()
 				gameSurface_Rect.x += ( screen.get_width() - oldScreen[0])//2
 				gameSurface_Rect.y += ( screen.get_height() - oldScreen[1])//2
+
+		if mousePressed == "right":
+			now = pygame.time.get_ticks()
+			if now - last >= 250:
+				last = now
+				for i in range(len(player.inventory)):
+					if player.selectedSlot == player.inventory[i]["slot"]:
+						if player.inventory[i]["item"] == "gun":
+							pass
+						elif player.inventory[i]["item"] == "wood_planks":
+							if player.inventory[i]["amount"] != 0:
+								if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+									sameBlock = False
+									for x in range(len(testMap)):
+										sameBlock = False
+										if testMap[x]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+											sameBlock = True
+											break
+										
+									if not sameBlock:
+										collisionRects.append(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+										testMap.append({"block": "wood_planks", "pos": [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]})
+										player.inventory[i]["amount"] -= 1
+									if player.rect.colliderect(collisionRects[-1]):
+										collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+										testMap.pop(-1)
+										player.inventory[i]["amount"] += 1
+		elif mousePressed == "left":
+			now = pygame.time.get_ticks()
+			if now - last >= 250:
+				last = now
+				for x in range(len(player.inventory)):
+					if player.selectedSlot == player.inventory[x]["slot"]:
+						if player.inventory[x]["item"] == "gun":
+							# shotBullets.append(Bullet(player.angle, player.rect.x, player.rect.y))
+							pass
+					else:
+						if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+							i = 0
+							while i <= len(testMap):
+								try:
+									if testMap[i]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+										if testMap[i]['block'] == "wood_planks":
+											collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+											testMap.pop(i)
+											i -= 1
+										elif testMap[i]["block"] == "tree":
+											collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
+											testMap.pop(i)
+											i -= 1
+								except IndexError:
+									pass
+								except ValueError:
+									pass
+								i += 1
+
+		print(mousePressed)
 
 		if pressedKeys["up"]:
 			player.moveUp()
