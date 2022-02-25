@@ -624,8 +624,6 @@ def game():
 									pass
 								i += 1
 
-		print(mousePressed)
-
 		if pressedKeys["up"]:
 			player.moveUp()
 		if pressedKeys["down"]:
