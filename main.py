@@ -40,10 +40,6 @@ pygame.mouse.set_visible(False)
 screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
 pygame.display.set_caption("ShootBox - Main Menu")
 clock = pygame.time.Clock()
-gameSurface = pygame.Surface((1024, 1024))
-gameSurface_Rect = gameSurface.get_rect()
-gameSurface_Rect.x = 0
-gameSurface_Rect.y = 0
 guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
 guiSurface.convert_alpha()
 	
@@ -90,6 +86,7 @@ summonedCubes = []
 cubeCooldown = random.randint(300, 500)
 collisionRects = []
 shotBullets = []
+pauseMenu = False
 oldScreen = None
 
 for l in range(len(testMap)):
@@ -102,28 +99,6 @@ for l in range(len(testMap)):
 # connection.bind((gameAddress, gamePort))
 # connection.listen()
 # client, client_address = connection.accept()
-
-availableResolutions = [
-	(1366, 768),
-	(1360, 768),
-	(1280, 720),
-	(1024, 768),
-	(1024, 576),
-	(960, 720),
-	(960, 600),
-	(960, 540),
-	(928, 696),
-	(896, 672),
-	(864, 486),
-	(840, 525),
-	(800, 600),
-	(800, 512),
-	(800, 450),
-	(720, 450),
-	(720, 405),
-	(700, 525),
-]
-
 
 cursor = pygame.image.load(os.path.join(guiTexturesPath, "cursor.png"))
 cursor = pygame.transform.smoothscale(cursor, (2**(5+quality), 2**(5+quality)))
@@ -152,6 +127,26 @@ gunItem = pygame.transform.smoothscale(gunItem, (64, 64)).convert_alpha()
 inventoryGui = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (640, 512))
+
+buttonDefault = pygame.image.load(os.path.join(guiTexturesPath, "buttonDefault.png"))
+buttonDefault = pygame.transform.smoothscale(buttonDefault, (2**(7+quality), 2**(7+quality)))
+buttonDefault = pygame.transform.smoothscale(buttonDefault, (256, 64)).convert_alpha()
+
+buttonHovered = pygame.image.load(os.path.join(guiTexturesPath, "buttonHovered.png"))
+buttonHovered = pygame.transform.smoothscale(buttonHovered, (2**(7+quality), 2**(7+quality)))
+buttonHovered = pygame.transform.smoothscale(buttonHovered, (256, 64)).convert_alpha()
+
+dropDownDefault = pygame.image.load(os.path.join(guiTexturesPath, "dropDown.png"))
+dropDownDefault = pygame.transform.smoothscale(dropDownDefault, (2**(7+quality), 2**(7+quality)))
+dropDownDefault = pygame.transform.smoothscale(dropDownDefault, (256, 64)).convert_alpha()
+
+dropDownOpened = pygame.image.load(os.path.join(guiTexturesPath, "dropDownOpened.png"))
+dropDownOpened = pygame.transform.smoothscale(dropDownOpened, (2**(7+quality), 2**(7+quality)))
+dropDownOpened = pygame.transform.smoothscale(dropDownOpened, (256, 64)).convert_alpha()
+
+textInputTexture = pygame.image.load(os.path.join(guiTexturesPath, "input.png"))
+textInputTexture = pygame.transform.smoothscale(textInputTexture, (2**(7+quality), 2**(7+quality)))
+textInputTexture = pygame.transform.smoothscale(textInputTexture, (256, 64)).convert_alpha()
 
 destroyBlock = []
 for load in range(16):
@@ -194,11 +189,11 @@ class Player(object):
 		self.currentSkinTexture = None
 		self.x = gameSurface.get_width()//2
 		self.y = gameSurface.get_height()//2
-		self.rect = pygame.Rect(self.x, self.y, availableResolutions[4][0]/32, 32)
+		self.rect = pygame.Rect(self.x+28, self.y+28, 36, 36)
 		self.rect.center = guiSurface.get_rect().center
 		self.speed = 3
 		self.inventory = [
-			{"item": "wood_planks", "amount": 436194124, "slot": 0},
+			{"item": "wood_planks", "amount": 64, "slot": 0},
 			{"item": "gun", "slot": 1}
 		]
 		self.selectedSlot = 0
@@ -310,7 +305,7 @@ class Player(object):
 # 		self.rect.center = round(self.pos[0])+16, round(self.pos[1])+8
 # 		gameSurface.blit(self.texture, self.pos)
 
-class Cube(object):
+class Cube:
 	def __init__(self):
 		self.x = random.randint(0, screen.get_width())
 		self.y = screen.get_width()-24
@@ -344,7 +339,7 @@ class Cube(object):
 				self.angle -= self.rotateSpeed
 		self.rect.y -= self.speed
 
-class Button(object):
+class Button:
 	def __init__(self, text, col, row):
 		self.text = text
 		self.col = col
@@ -352,17 +347,9 @@ class Button(object):
 		self.textRenderer = fonts[24].render((str(self.text)), True, (255, 255, 255))
 		self.textRenderer_rect = self.textRenderer.get_rect()
 
-		self.textureDefault = pygame.image.load(os.path.join(guiTexturesPath, "buttonDefault.png"))
-		self.textureDefault = pygame.transform.smoothscale(self.textureDefault, (2**(7+quality), 2**(7+quality)))
-		self.textureDefault = pygame.transform.smoothscale(self.textureDefault, (256, 64)).convert_alpha()
-
-		self.textureHovered = pygame.image.load(os.path.join(guiTexturesPath, "buttonHovered.png"))
-		self.textureHovered = pygame.transform.smoothscale(self.textureHovered, (2**(7+quality), 2**(7+quality)))
-		self.textureHovered = pygame.transform.smoothscale(self.textureHovered, (256, 64)).convert_alpha()
-
 		self.state = "default"
 		self.rect = pygame.Rect(0, 0, 256, 64)
-		self.rect.centerx = gameSurface.get_width() // 2 + (128 * self.row)
+		self.rect.centerx = guiSurface.get_width() // 2 + (128 * self.row)
 		self.rect.y = 32+(self.col*64)
 	def render(self):
 		if self.rect.collidepoint(pygame.mouse.get_pos()):
@@ -370,17 +357,63 @@ class Button(object):
 		else:
 			self.state = "default"
 		if self.state == "default":
-			guiSurface.blit(self.textureDefault, self.rect)
+			guiSurface.blit(buttonDefault, self.rect)
 		else:
-			guiSurface.blit(self.textureHovered, self.rect)
+			guiSurface.blit(buttonHovered, self.rect)
 		guiSurface.blit(self.textRenderer, (self.rect.centerx-self.textRenderer_rect.centerx, self.rect.centery-self.textRenderer_rect.centery-8))
 		self.rect.centerx = screen.get_width()/2 + (128 * self.row)
 
-player = Player()
+class Dropdown:
+	def __init__(self, title, list, x, y):
+		self.title = title
+		self.list = list
+		self.itemsRects = []
+		for item in range(1, len(self.list)):
+			self.itemsRects.append(pygame.Rect(self.x, self.y+item*64, 256, 64))
+		self.opened = False
+	def switch(self):
+		self.opened ^= False
+	def render(self):
+		if self.opened:
+			guiSurface.blit(dropDownOpened, (self.x, self.y))
+			for item in range(len(self.list)):
+				pygame.draw.rect(guiSurface, (255, 255, 255), (self.x, (self.y+64)+item*64, 256, 64))
+				pygame.draw.rect(guiSurface, (0, 0, 0), (self.x, (self.y+64)+item*64, 256, 64), 3, 3)
+				renderText(str(self.list[item]), 24, (0, 0, 0), (self.x+8, ((self.y+64)+item*64)))
+		else:
+			guiSurface.blit(dropDownDefault, (self.x, self.y))
 
-playButton = Button("Играть", 2, 0)
-settingsButton = Button("Настройки", 3, -1)
-exitButton = Button("Выход", 3, 1)
+class TextInput:
+	def __init__(self, x, y, text=""):
+		self.text = text
+		self.active = False
+		self.x = x
+		self.y = y
+		self.text_surface = fonts[36].render(self.text, True, (0, 0, 0))
+		self.rect = pygame.Rect(x, y, 256, 64)
+	def eventHandle(self, event):
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			if self.rect.collidepoint(event.pos):
+				self.active = True
+			else:
+				self.active = False
+		if event.type == pygame.KEYDOWN:
+			if self.active:
+				if event.key == pygame.K_BACKSPACE:
+					self.text = self.text[:-1]
+				else:
+					if len(self.text) <= 10:
+						try:
+							self.text += event.unicode
+						except:
+							pass
+				self.text_surface = fonts[36].render(self.text, True, (0, 0, 0))
+	def render(self):
+		guiSurface.blit(textInputTexture, self.rect)
+		guiSurface.blit(self.text_surface, (self.rect.x+5, self.rect.y+5))
+	def getInput(self):
+		return self.text
+		
 
 # gameSurface_Rect.x = 
 isLoading = False
@@ -388,6 +421,12 @@ isLoading = False
 def menu():
 	last = pygame.time.get_ticks()
 	global cubeCooldown
+
+	# Кнопки
+	play = Button("Играть", 2, 0)
+	settings = Button("Настройки", 3, -1)
+	exit = Button("Выход", 3, 1)
+	
 	while 1:
 		clock.tick(60)
 		screen.fill((28, 21, 53))
@@ -410,11 +449,11 @@ def menu():
 				pass
 			i += 1
 
-		playButton.render()
-		settingsButton.render()
-		exitButton.render()
-
 		guiSurface.blit(logo, (screen.get_width()/2-224, 48))
+
+		play.render()
+		settings.render()
+		exit.render()
 
 		for event in pygame.event.get():
 			if event.type == QUIT:
@@ -422,11 +461,11 @@ def menu():
 				sys.exit()
 			if event.type == MOUSEBUTTONDOWN:
 				if event.button == 1:
-					if playButton.rect.collidepoint(event.pos):
-						game()
-					if settingsButton.rect.collidepoint(event.pos):
+					if play.rect.collidepoint(event.pos):
+						playmodeSelect()
+					if settings.rect.collidepoint(event.pos):
 						gameSettings()
-					if exitButton.rect.collidepoint(event.pos):
+					if exit.rect.collidepoint(event.pos):
 						pygame.quit()
 						sys.exit()
 		
@@ -440,25 +479,25 @@ def menu():
 
 		pygame.display.update()
 
-def gameSettings():
+def playmodeSelect():
 	last = pygame.time.get_ticks()
 	global cubeCooldown
-	pygame.display.set_caption("ShootBox - Settings")
+	pygame.display.set_caption("ShootBox - Menu")
+
+	singleplayer = Button("Одиночная игра", 2, -1)
+	multiplayer = Button("Мультиплеер", 2, 1)
+	back = Button("Назад", 3, 0)
+
 	while 1:
 		clock.tick(60)
 		screen.fill((28, 21, 53))
-
-
-		for event in pygame.event.get():
-			if event.type == QUIT:
-				pygame.quit()
-				sys.exit()
+		guiSurface.fill((28, 21, 53))
 
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
 			last = now
 			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(300, 500)
+			cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -471,20 +510,198 @@ def gameSettings():
 				pass
 			i += 1
 
-		screen.blit(cursor, pygame.mouse.get_pos())
-		
+		singleplayer.render()
+		multiplayer.render()
+		back.render()
+
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				sys.exit()
+			if event.type == MOUSEBUTTONDOWN:
+				if event.button == 1:
+					if singleplayer.rect.collidepoint(event.pos):
+						singleplayerWorldAction()
+					if multiplayer.rect.collidepoint(event.pos):
+						pass
+					if back.rect.collidepoint(event.pos):
+						menu()
+		guiSurface.blit(cursor, pygame.mouse.get_pos())
+			
+		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
+
+		screen.blit(guiSurface, (0,0))
+
 		pygame.display.update()
 
-def game():
-	pygame.display.set_caption("ShootBox - Game")
-	global quality, screen, guiSurface, gameSurface, gameSurface_Rect
+def singleplayerWorldAction():
 	last = pygame.time.get_ticks()
-	for x in range(random.randint(2, 15)):
+	global cubeCooldown
+	pygame.display.set_caption("ShootBox - Menu")
+	load = Button("Загрузить", 2, -1)
+	create = Button("Создать", 2, 1)
+	back = Button("Назад", 3, 0)
+	while 1:
+		clock.tick(60)
+		screen.fill((28, 21, 53))
+		guiSurface.fill((28, 21, 53))
+
+		now = pygame.time.get_ticks()
+		if now - last >= cubeCooldown:
+			last = now
+			summonedCubes.append(Cube())
+			cubeCooldown = random.randint(350, 600)
+		
+		i = 0
+		while i <= len(summonedCubes):
+			try:
+				summonedCubes[i].render()
+				if summonedCubes[i].rect.y < -128:
+					summonedCubes.remove(summonedCubes[i])
+					i -= 1
+			except IndexError:
+				pass
+			i += 1
+
+		load.render()
+		create.render()
+		back.render()
+
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				sys.exit()
+			if event.type == MOUSEBUTTONDOWN:
+				if event.button == 1:
+					if load.rect.collidepoint(event.pos):
+						singleplayerMode()
+					if create.rect.collidepoint(event.pos):
+						createWorldMenu()
+		guiSurface.blit(cursor, pygame.mouse.get_pos())
+			
+		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
+
+		screen.blit(guiSurface, (0,0))
+
+		pygame.display.update()
+
+widthInput = TextInput(100, 100, "")
+heightInput = TextInput(100, 200, "")
+
+def createWorldMenu():
+	last = pygame.time.get_ticks()
+	global cubeCooldown
+	pygame.display.set_caption("ShootBox - Menu")
+	create = Button("Создать", 2, 0)
+	back = Button("Назад", 4, 0)
+	mousePressed = False
+	while 1:
+		clock.tick(60)
+		screen.fill((28, 21, 53))
+		guiSurface.fill((28, 21, 53))
+
+		now = pygame.time.get_ticks()
+		if now - last >= cubeCooldown:
+			last = now
+			summonedCubes.append(Cube())
+			cubeCooldown = random.randint(350, 600)
+		
+		i = 0
+		while i <= len(summonedCubes):
+			try:
+				summonedCubes[i].render()
+				if summonedCubes[i].rect.y < -128:
+					summonedCubes.remove(summonedCubes[i])
+					i -= 1
+			except IndexError:
+				pass
+			i += 1
+		create.render()
+		back.render()
+
+		widthInput.render()
+		heightInput.render()
+
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				sys.exit()
+			widthInput.eventHandle(event)
+			heightInput.eventHandle(event)
+			if event.type == MOUSEBUTTONDOWN:
+				if event.button == 1:
+					mousePressed = True
+					if create.rect.collidepoint(event.pos):
+						generateMap()
+						singleplayerMode()
+		guiSurface.blit(cursor, pygame.mouse.get_pos())
+			
+		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
+
+		screen.blit(guiSurface, (0,0))
+
+		pygame.display.update()
+
+def generateMap():
+	global gameSurface, gameSurface_Rect, player
+	gameSurface = pygame.Surface((int(widthInput.getInput())*64, int(heightInput.getInput())*64))
+	gameSurface_Rect = gameSurface.get_rect()
+	gameSurface_Rect.x = 0
+	gameSurface_Rect.y = 0
+	for block in range(random.randint(2, int(widthInput.text)-2)):
 		randomPos = [random.randint(0,16), random.randint(0,16)]
 		testMap.append(
 			{"block": "tree", "pos": [randomPos[0], randomPos[1]]}
 		)
 		collisionRects.append(pygame.Rect(randomPos[0]*64+24, randomPos[1]*64+24, 16, 16))
+	player = Player()
+
+def gameSettings():
+	last = pygame.time.get_ticks()
+	global cubeCooldown
+	pygame.display.set_caption("ShootBox - Settings")
+	while 1:
+		clock.tick(60)
+		screen.fill((28, 21, 53))
+		guiSurface.fill((28, 21, 53))
+
+		now = pygame.time.get_ticks()
+		if now - last >= cubeCooldown:
+			last = now
+			summonedCubes.append(Cube())
+			cubeCooldown = random.randint(350, 600)
+		
+		i = 0
+		while i <= len(summonedCubes):
+			try:
+				summonedCubes[i].render()
+				if summonedCubes[i].rect.y < -128:
+					summonedCubes.remove(summonedCubes[i])
+					i -= 1
+			except IndexError:
+				pass
+			i += 1
+
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				sys.exit()
+			if event.type == MOUSEBUTTONDOWN:
+				if event.button == 1:
+					pass
+
+		guiSurface.blit(cursor, pygame.mouse.get_pos())
+			
+		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
+
+		screen.blit(guiSurface, (0,0))
+
+		pygame.display.update()
+
+def singleplayerMode():
+	pygame.display.set_caption("ShootBox - Game")
+	global quality, screen, guiSurface, gameSurface, gameSurface_Rect, pauseMenu
+	last = pygame.time.get_ticks()
 
 	mousePressed = False
 
@@ -510,6 +727,8 @@ def game():
 					pressedKeys["left"] = True
 				elif event.key == K_d:
 					pressedKeys["right"] = True
+				elif event.key == K_ESCAPE:
+					pauseMenu = not pauseMenu
 			elif event.type == KEYUP:
 				if event.key == K_w:
 					pressedKeys["up"] = False
@@ -524,33 +743,6 @@ def game():
 					mousePressed = "right"
 				if event.button == 1:
 					mousePressed = "left"
-					now = pygame.time.get_ticks()
-					if now - last >= 250:
-						last = now
-						for x in range(len(player.inventory)):
-							if player.selectedSlot == player.inventory[x]["slot"]:
-								if player.inventory[x]["item"] == "gun":
-									# shotBullets.append(Bullet(player.angle, player.rect.x, player.rect.y))
-									pass
-							else:
-								if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
-									i = 0
-									while i <= len(testMap):
-										try:
-											if testMap[i]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
-												if testMap[i]['block'] == "wood_planks":
-													collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
-													testMap.pop(i)
-													i -= 1
-												elif testMap[i]["block"] == "tree":
-													collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
-													testMap.pop(i)
-													i -= 1
-										except IndexError:
-											pass
-										except ValueError:
-											pass
-										i += 1
 				if event.button == 4:
 					if player.selectedSlot == 7:
 						player.selectedSlot = 0
@@ -604,25 +796,27 @@ def game():
 						if player.inventory[x]["item"] == "gun":
 							# shotBullets.append(Bullet(player.angle, player.rect.x, player.rect.y))
 							pass
-					else:
-						if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
-							i = 0
-							while i <= len(testMap):
-								try:
-									if testMap[i]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
-										if testMap[i]['block'] == "wood_planks":
-											collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
-											testMap.pop(i)
-											i -= 1
-										elif testMap[i]["block"] == "tree":
-											collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
-											testMap.pop(i)
-											i -= 1
-								except IndexError:
-									pass
-								except ValueError:
-									pass
-								i += 1
+						elif player.inventory[x]["item"] == "wood_planks":
+							if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+								i = 0
+								while i <= len(testMap):
+									try:
+										if testMap[i]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+											if testMap[i]['block'] == "wood_planks":
+												collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+												testMap.pop(i)
+												i -= 1
+												if player.inventory[x]["item"] == "wood_planks":
+													player.inventory[x]["amount"] += 1
+											elif testMap[i]["block"] == "tree":
+												collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
+												testMap.pop(i)
+												i -= 1
+									except IndexError:
+										pass
+									except ValueError:
+										pass
+									i += 1
 
 		if pressedKeys["up"]:
 			player.moveUp()
@@ -632,10 +826,6 @@ def game():
 			player.moveLeft()
 		elif pressedKeys["right"]:
 			player.moveRight()
-
-		for b in range(len(testMap)):
-			if testMap[b]["block"] == "wood_planks":
-				gameSurface.blit(woodPlanks, (testMap[b]["pos"][0]*64, testMap[b]["pos"][1]*64))
 
 		i = 0
 		while i <= len(shotBullets):
@@ -650,8 +840,19 @@ def game():
 		player.render()
 
 		for b in range(len(testMap)):
+			#Рендер блоков
 			if testMap[b]["block"] == "tree":
 				gameSurface.blit(tree, (testMap[b]["pos"][0]*64, testMap[b]["pos"][1]*64))
+			elif testMap[b]["block"] == "wood_planks":
+				gameSurface.blit(woodPlanks, (testMap[b]["pos"][0]*64, testMap[b]["pos"][1]*64))
+			
+			#Рендер квадрата
+			if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+				if not settings["highlightSurface"]:
+					if testMap[b]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+						pygame.draw.rect(gameSurface, (255, 255, 255), (testMap[b]["pos"][0]*64, testMap[b]["pos"][1]*64, 64, 64), 3)
+				else:
+					pygame.draw.rect(gameSurface, (255, 255, 255), ((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64), 2)
 
 		s = 0
 		c = 0
