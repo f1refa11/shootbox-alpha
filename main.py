@@ -127,6 +127,8 @@ gunItem = pygame.transform.smoothscale(gunItem, (64, 64)).convert_alpha()
 inventoryGui = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (640, 512))
+inventoryGui_rect = inventoryGui.get_rect()
+inventoryGui_rect.center = screen.get_rect().center
 
 buttonDefault = pygame.image.load(os.path.join(guiTexturesPath, "buttonDefault.png"))
 buttonDefault = pygame.transform.smoothscale(buttonDefault, (2**(7+quality), 2**(7+quality)))
@@ -260,7 +262,7 @@ class Player(object):
 				self.rect.y -= self.speed
 				self.y -= self.speed
 				gameSurface_Rect.y += self.speed
-	def render(self):
+	def render(self, screen):
 		mouseX, mouseY = pygame.mouse.get_pos()
 		self.oldCenter = self.rect.center
 		for x in range(len(self.inventory)):
@@ -277,11 +279,11 @@ class Player(object):
 		self.currentSkinTexture = pygame.transform.rotozoom(self.currentSkinTexture, self.angle-90, 1)
 		self.newRect = self.currentSkinTexture.get_rect()
 		self.newRect.center = self.oldCenter
-		gameSurface.blit(self.currentSkinTexture, self.newRect)
+		screen.blit(self.currentSkinTexture, self.newRect)
 		self.nicknameDisplay_rect = self.nicknameDisplay.get_rect()
 		self.nicknameDisplay_rect.centerx = self.rect.centerx
 		self.nicknameDisplay_rect.y = self.rect.y-32
-		gameSurface.blit(self.nicknameDisplay, self.nicknameDisplay_rect)
+		screen.blit(self.nicknameDisplay, self.nicknameDisplay_rect)
 
 # class Bullet(object):
 # 	def __init__(self, angle, x, y):
@@ -837,7 +839,7 @@ def singleplayerMode():
 			except IndexError:
 				pass
 			i += 1
-		player.render()
+		player.render(gameSurface)
 
 		for b in range(len(testMap)):
 			#Рендер блоков
@@ -876,6 +878,10 @@ def singleplayerMode():
 					guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+8, guiSurface.get_height()-64+8))
 					renderText(str(player.inventory[x]["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+player.inventory[x]["slot"]*64+32, guiSurface.get_height()-64+32))
 		pygame.draw.rect(guiSurface, (255, 0, 0), (guiSurface.get_width()//2-256+player.selectedSlot*64, guiSurface.get_height()-64, 64, 64), 3)
+
+		if pauseMenu:
+			guiSurface.blit(inventoryGui, inventoryGui_rect)
+			guiSurface.blit(player.currentSkinTexture, (100, 100))
 
 		for x in range(len(player.inventory)):
 			if player.selectedSlot == player.inventory[x]["slot"]:
