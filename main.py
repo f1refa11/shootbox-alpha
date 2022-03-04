@@ -63,8 +63,8 @@ blocksTexturesPath = os.path.join(texturesPath, "blocks")
 defaultSkinPath = os.path.join(skinTexturesPath, "default")
 
 #Загружаем все JSON файлы
-with open(os.path.join(rootPath, "settings.json")) as f:
-	settings = json.load(f)
+with open(os.path.join(rootPath, "config.json")) as f:
+	config = json.load(f)
 
 with open(os.path.join(mapPath, "testMap.json")) as f:
 	testMap = json.load(f)
@@ -262,7 +262,7 @@ class Player(object):
 				self.rect.y -= self.speed
 				self.y -= self.speed
 				gameSurface_Rect.y += self.speed
-	def render(self, screen):
+	def render(self):
 		mouseX, mouseY = pygame.mouse.get_pos()
 		self.oldCenter = self.rect.center
 		for x in range(len(self.inventory)):
@@ -279,11 +279,11 @@ class Player(object):
 		self.currentSkinTexture = pygame.transform.rotozoom(self.currentSkinTexture, self.angle-90, 1)
 		self.newRect = self.currentSkinTexture.get_rect()
 		self.newRect.center = self.oldCenter
-		screen.blit(self.currentSkinTexture, self.newRect)
+		gameSurface.blit(self.currentSkinTexture, self.newRect)
 		self.nicknameDisplay_rect = self.nicknameDisplay.get_rect()
 		self.nicknameDisplay_rect.centerx = self.rect.centerx
 		self.nicknameDisplay_rect.y = self.rect.y-32
-		screen.blit(self.nicknameDisplay, self.nicknameDisplay_rect)
+		gameSurface.blit(self.nicknameDisplay, self.nicknameDisplay_rect)
 
 # class Bullet(object):
 # 	def __init__(self, angle, x, y):
@@ -525,7 +525,7 @@ def playmodeSelect():
 					if singleplayer.rect.collidepoint(event.pos):
 						singleplayerWorldAction()
 					if multiplayer.rect.collidepoint(event.pos):
-						pass
+						multiplayerAction()
 					if back.rect.collidepoint(event.pos):
 						menu()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
@@ -579,6 +579,61 @@ def singleplayerWorldAction():
 						singleplayerMode()
 					if create.rect.collidepoint(event.pos):
 						createWorldMenu()
+					if back.rect.collidepoint(event.pos):
+						playmodeSelect()
+		guiSurface.blit(cursor, pygame.mouse.get_pos())
+			
+		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
+
+		screen.blit(guiSurface, (0,0))
+
+		pygame.display.update()
+
+def multiplayerAction():
+	last = pygame.time.get_ticks()
+	global cubeCooldown
+	pygame.display.set_caption("ShootBox - Menu")
+	join = Button("Войти", 2, -1)
+	create = Button("Создать комнату", 2, 1)
+	back = Button("Назад", 3, 0)
+	while 1:
+		clock.tick(60)
+		screen.fill((28, 21, 53))
+		guiSurface.fill((28, 21, 53))
+
+		now = pygame.time.get_ticks()
+		if now - last >= cubeCooldown:
+			last = now
+			summonedCubes.append(Cube())
+			cubeCooldown = random.randint(350, 600)
+		
+		i = 0
+		while i <= len(summonedCubes):
+			try:
+				summonedCubes[i].render()
+				if summonedCubes[i].rect.y < -128:
+					summonedCubes.remove(summonedCubes[i])
+					i -= 1
+			except IndexError:
+				pass
+			i += 1
+
+		join.render()
+		create.render()
+		back.render()
+
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				sys.exit()
+			if event.type == MOUSEBUTTONDOWN:
+				if event.button == 1:
+					if join.rect.collidepoint(event.pos):
+						singleplayerMode()
+					if create.rect.collidepoint(event.pos):
+						createWorldMenu()
+					if back.rect.collidepoint(event.pos):
+						playmodeSelect()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
 		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
@@ -636,6 +691,8 @@ def createWorldMenu():
 					if create.rect.collidepoint(event.pos):
 						generateMap()
 						singleplayerMode()
+					elif back.rect.collidepoint(event.pos):
+						singleplayerWorldAction()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
 		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
@@ -839,7 +896,7 @@ def singleplayerMode():
 			except IndexError:
 				pass
 			i += 1
-		player.render(gameSurface)
+		player.render()
 
 		for b in range(len(testMap)):
 			#Рендер блоков
@@ -850,7 +907,7 @@ def singleplayerMode():
 			
 			#Рендер квадрата
 			if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
-				if not settings["highlightSurface"]:
+				if not config["highlightSurface"]:
 					if testMap[b]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
 						pygame.draw.rect(gameSurface, (255, 255, 255), (testMap[b]["pos"][0]*64, testMap[b]["pos"][1]*64, 64, 64), 3)
 				else:
@@ -881,7 +938,7 @@ def singleplayerMode():
 
 		if pauseMenu:
 			guiSurface.blit(inventoryGui, inventoryGui_rect)
-			guiSurface.blit(player.currentSkinTexture, (100, 100))
+			guiSurface.blit(player.defaultNormal, (200, 200))
 
 		for x in range(len(player.inventory)):
 			if player.selectedSlot == player.inventory[x]["slot"]:
