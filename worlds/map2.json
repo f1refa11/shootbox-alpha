@@ -1,0 +1,7 @@
+{
+    "title": "Test World",
+    "size": [16, 8],
+    "map": [
+        {"block": "wood_planks", "pos": [5, 4]}
+    ]
+}
