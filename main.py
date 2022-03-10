@@ -763,10 +763,10 @@ def loadWorldMenu():
 				sys.exit()
 			if event.type == MOUSEBUTTONDOWN:
 				if event.button == 1:
-					for choice in worldChoices:
-						if choice[3].collidepoint(pygame.mouse.get_pos()):
-							pygame.draw.rect(choice[10], (255, 255, 255), choice[2], 2)
-						if choice[7].collidepoint(pygame.mouse.get_pos()):
+					for x in range(len(worldChoices)):
+						if worldChoices[x][3].collidepoint(pygame.mouse.get_pos()):
+							loadMap(savedWorlds[x])
+						if worldChoices[x][7].collidepoint(pygame.mouse.get_pos()):
 							print("Функция ещё не сделана!!!")
 			
 		
@@ -836,14 +836,17 @@ def createWorldMenu():
 
 def loadMap(world):
 	global gameSurface, gameSurface_Rect, player
-	gameSurface = pygame.Surface(world)
+	gameSurface = pygame.Surface((world["size"][0]*64, world["size"][1]*64)).convert_alpha()
 	gameSurface_Rect = gameSurface.get_rect()
 	gameSurface_Rect.x = 0
 	gameSurface_Rect.y = 0
+	for block in world["map"]:
+		if block["block"] == "wood_planks":
+			pass
 
 def generateMap():
 	global gameSurface, gameSurface_Rect, player
-	gameSurface = pygame.Surface((int(widthInput.getInput())*64, int(heightInput.getInput())*64))
+	gameSurface = pygame.Surface((int(widthInput.getInput())*64, int(heightInput.getInput())*64)).convert_alpha()
 	gameSurface_Rect = gameSurface.get_rect()
 	gameSurface_Rect.x = 0
 	gameSurface_Rect.y = 0
