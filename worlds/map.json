@@ -1,7 +1,0 @@
-{
-    "title": "Мой мир",
-    "size": [16, 8],
-    "map": [
-        {"block": "wood_planks", "pos": [4, 4]}
-    ]
-}
