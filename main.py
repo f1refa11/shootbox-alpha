@@ -1,4 +1,4 @@
-## -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 #Импортируем все библиотеки
 import os
@@ -39,16 +39,20 @@ pygame.mouse.set_visible(False)
 # loadingDisplayThread = threading.Thread(target=loadingScreenDisplay)
 # loadingDisplayThread.setDaemon(True)
 # loadingDisplayThread.start()
+rootPath = os.path.dirname(__file__)
+with open(os.path.join(rootPath, "config.json")) as f:
+	config = json.load(f)
+
+# screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
+screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
 
 screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
-# screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
 pygame.display.set_caption("ShootBox - Main Menu")
 clock = pygame.time.Clock()
 guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
 guiSurface.convert_alpha()
 	
 #Работаем над директориями
-rootPath = os.path.dirname(__file__)
 resourcesPath = os.path.join(rootPath, "resources")
 worldsPath = os.path.join(rootPath, "worlds")
 
@@ -68,8 +72,6 @@ blocksTexturesPath = os.path.join(texturesPath, "blocks")
 defaultSkinPath = os.path.join(skinTexturesPath, "default")
 
 #Загружаем все JSON файлы
-with open(os.path.join(rootPath, "config.json")) as f:
-	config = json.load(f)
 
 # with open(os.path.join(mapPath, "testMap.json")) as f:
 gameMap = []
@@ -173,7 +175,7 @@ logo = pygame.image.load(os.path.join(guiTexturesPath, "logo.png")).convert_alph
 savedWorlds = []
 for world in glob.glob(os.path.join(worldsPath, "*.json")):
 	try:
-		with open(os.path.join(worldsPath, world)) as f:
+		with open(os.path.join(worldsPath, world), encoding="utf-8") as f:
 			savedWorlds.append(json.load(f))
 	except IsADirectoryError:
 		pass
@@ -766,6 +768,7 @@ def loadWorldMenu():
 					for x in range(len(worldChoices)):
 						if worldChoices[x][3].collidepoint(pygame.mouse.get_pos()):
 							loadMap(savedWorlds[x])
+							singleplayerMode()
 						if worldChoices[x][7].collidepoint(pygame.mouse.get_pos()):
 							print("Функция ещё не сделана!!!")
 			
@@ -835,14 +838,15 @@ def createWorldMenu():
 		pygame.display.update()
 
 def loadMap(world):
-	global gameSurface, gameSurface_Rect, player
+	global gameSurface, gameSurface_Rect, player, gameMap
 	gameSurface = pygame.Surface((world["size"][0]*64, world["size"][1]*64)).convert_alpha()
 	gameSurface_Rect = gameSurface.get_rect()
 	gameSurface_Rect.x = 0
 	gameSurface_Rect.y = 0
-	for block in world["map"]:
-		if block["block"] == "wood_planks":
-			pass
+	gameMap = world["map"]
+	for block in gameMap:
+		collisionRects.append(pygame.Rect(block["pos"][0]*64, block["pos"][1]*64, 64, 64))
+	player = Player()
 
 def generateMap():
 	global gameSurface, gameSurface_Rect, player
