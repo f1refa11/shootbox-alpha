@@ -1,4 +1,12 @@
 {
+    "resolution": [1024, 576],
+    "flags": {
+        "fullscreen": false,
+        "hardwareAcceleration": false,
+        "scaled": false,
+        "doubleBuffering": false,
+        "vsync": false
+    },
     "lang": "ru",
     "soundVol": 100,
     "musicVol": 100,
