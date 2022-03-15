@@ -14,37 +14,36 @@ import pickle
 import logging
 import threading
 import glob
-#Инициализируем и настраиваем Pygame
 pygame.init()
 
-# Показываем экран(не работает)
+isLoading = True
 
-# isLoading = True
-
-# screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
-# pygame.display.set_caption("ShootBox - Loading...")
+screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
+pygame.display.set_caption("ShootBox - Loading...")
 pygame.mouse.set_visible(False)
-# textRenderer = pygame.font.Font(None, 24)
-# loadingText = textRenderer.render("Loading", False, (255, 255, 255))
-# loadingText_rect = loadingText.get_rect()
-# loadingText_rect.center = screen.get_rect().center
 
-# def loadingScreenDisplay():
-# 	while isLoading:
-# 		screen.fill((11, 9, 24))
-# 		screen.blit(loadingText, loadingText_rect)
-
-# 		# pygame.display.update()
-
-# loadingDisplayThread = threading.Thread(target=loadingScreenDisplay)
-# loadingDisplayThread.setDaemon(True)
-# loadingDisplayThread.start()
 rootPath = os.path.dirname(__file__)
+resourcesPath = os.path.join(rootPath, "resources")
+
+textRenderer = pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), 36)
+loadingText = textRenderer.render("Загрузка...", False, (255, 255, 255))
+loadingText_rect = loadingText.get_rect()
+loadingText_rect.center = screen.get_rect().center
+
+def loadingScreenDisplay():
+	while isLoading:
+		screen.fill((11, 9, 24))
+		screen.blit(loadingText, loadingText_rect)
+
+		pygame.display.update()
+
+loadingDisplayThread = threading.Thread(target=loadingScreenDisplay)
+loadingDisplayThread.setDaemon(True)
+loadingDisplayThread.start()
 with open(os.path.join(rootPath, "config.json")) as f:
 	config = json.load(f)
 
-# screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
-screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
+# screen = pygame.display.set_mode((1920, 1080), pygame.RESIZABLE | pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
 
 screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
 pygame.display.set_caption("ShootBox - Main Menu")
@@ -52,8 +51,6 @@ clock = pygame.time.Clock()
 guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
 guiSurface.convert_alpha()
 	
-#Работаем над директориями
-resourcesPath = os.path.join(rootPath, "resources")
 worldsPath = os.path.join(rootPath, "worlds")
 
 texturesPath = os.path.join(resourcesPath, "textures")
@@ -62,21 +59,15 @@ musicPath = os.path.join(resourcesPath, "music")
 langPath = os.path.join(resourcesPath, "lang")
 mapPath = os.path.join(resourcesPath, "maps")
 
-#Текстуры
 skinTexturesPath = os.path.join(texturesPath, "skins")
 guiTexturesPath = os.path.join(texturesPath, "gui")
 itemTexturesPath = os.path.join(texturesPath, "item")
 blocksTexturesPath = os.path.join(texturesPath, "blocks")
 
-#Скины
 defaultSkinPath = os.path.join(skinTexturesPath, "default")
 
-#Загружаем все JSON файлы
-
-# with open(os.path.join(mapPath, "testMap.json")) as f:
 gameMap = []
 
-#Импортируем шрифт
 fonts = []
 for x in range(1, 250):
 	fonts.append(pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), x))
@@ -135,7 +126,6 @@ gunItem = pygame.transform.smoothscale(gunItem, (64, 64)).convert_alpha()
 inventoryGui = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
 # inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
 scalingIndex = inventoryGui.get_height() / (screen.get_height()-8)
-print(screen.get_height())
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (inventoryGui.get_width()/scalingIndex, screen.get_height()-8))
 inventoryGui_rect = inventoryGui.get_rect()
 inventoryGui_rect.center = screen.get_rect().center
@@ -159,6 +149,7 @@ dropDownOpened = pygame.transform.smoothscale(dropDownOpened, (256, 64)).convert
 textInputTexture = pygame.image.load(os.path.join(guiTexturesPath, "input.png"))
 textInputTexture = pygame.transform.smoothscale(textInputTexture, (2**(7+quality), 2**(7+quality)))
 textInputTexture = pygame.transform.smoothscale(textInputTexture, (256, 64)).convert_alpha()
+
 
 destroyBlock = []
 for load in range(12):
@@ -405,7 +396,6 @@ class Dropdown:
 				renderText(str(self.list[item]), 24, (0, 0, 0), (self.x+8, ((self.y+64)+item*64)))
 		else:
 			guiSurface.blit(dropDownDefault, (self.x, self.y))
-
 class TextInput:
 	def __init__(self, x, y, text=""):
 		self.text = text
@@ -443,7 +433,6 @@ class TextInput:
 			pygame.draw.rect(guiSurface, (0, 0, 0), self.lineRect)
 	def getInput(self):
 		return self.text
-		
 
 # gameSurface_Rect.x = 
 isLoading = False
@@ -459,7 +448,6 @@ def menu():
 
 	logoAppearingSpeed = 5
 	logoY = -logo.get_height()
-	
 	while 1:
 		clock.tick(60)
 		screen.fill((28, 21, 53))
@@ -576,7 +564,6 @@ def playmodeSelect():
 def singleplayerWorldAction():
 	last = pygame.time.get_ticks()
 	global cubeCooldown
-	pygame.display.set_caption("ShootBox - Menu")
 	load = Button("Загрузить", 2, -1)
 	create = Button("Создать", 2, 1)
 	back = Button("Назад", 3, 0)
@@ -629,7 +616,6 @@ def singleplayerWorldAction():
 def multiplayerAction():
 	last = pygame.time.get_ticks()
 	global cubeCooldown
-	pygame.display.set_caption("ShootBox - Menu")
 	join = Button("Войти", 2, -1)
 	create = Button("Создать комнату", 2, 1)
 	back = Button("Назад", 3, 0)
@@ -679,13 +665,46 @@ def multiplayerAction():
 
 		pygame.display.update()
 
+def joinServer(ip):
+	pass
+
+def joinMultiplayerMenu():
+	global cubeCooldown
+	ipInput = TextInput(100, 100, "")
+	join = Button("Присоединиться", 3, 0)
+	back = Button("Назад", 4, 0)
+	while 1:
+		clock.tick(60)
+		screen.fill((28, 21, 53))
+		guiSurface.fill((28, 21, 53))
+
+		join.render()
+		back.render()
+
+		now = pygame.time.get_ticks()
+		if now - last >= cubeCooldown:
+			last = now
+			summonedCubes.append(Cube())
+			cubeCooldown = random.randint(350, 600)
+		
+		i = 0
+		while i <= len(summonedCubes):
+			try:
+				summonedCubes[i].render()
+				if summonedCubes[i].rect.y < -128:
+					summonedCubes.remove(summonedCubes[i])
+					i -= 1
+			except IndexError:
+				pass
+			i += 1
+
+
 widthInput = TextInput(100, 100, "")
 heightInput = TextInput(100, 200, "")
 
 def loadWorldMenu():
 	last = pygame.time.get_ticks()
 	global cubeCooldown
-	pygame.display.set_caption("ShootBox - Menu")
 	worldChoices = []
 	for world in range(len(savedWorlds)):
 		worldTitle = fonts[24].render(str(savedWorlds[world]["title"]), False, (255, 255, 255))
