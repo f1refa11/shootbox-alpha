@@ -25,14 +25,16 @@ pygame.mouse.set_visible(False)
 rootPath = os.path.dirname(__file__)
 resourcesPath = os.path.join(rootPath, "resources")
 
+loadingState = "Подготовка..."
+
 textRenderer = pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), 36)
-loadingText = textRenderer.render("Загрузка...", False, (255, 255, 255))
-loadingText_rect = loadingText.get_rect()
-loadingText_rect.center = screen.get_rect().center
 
 def loadingScreenDisplay():
 	while isLoading:
 		screen.fill((11, 9, 24))
+		loadingText = textRenderer.render(loadingState, False, (255, 255, 255))
+		loadingText_rect = loadingText.get_rect()
+		loadingText_rect.center = screen.get_rect().center
 		screen.blit(loadingText, loadingText_rect)
 
 		pygame.display.update()
@@ -98,6 +100,8 @@ for l in gameMap:
 # connection.bind((gameAddress, gamePort))
 # connection.listen()
 # client, client_address = connection.accept()
+
+loadingState = "Загрузка текстур..."
 
 cursor = pygame.image.load(os.path.join(guiTexturesPath, "cursor.png"))
 cursor = pygame.transform.smoothscale(cursor, (2**(5+quality), 2**(5+quality)))
@@ -397,14 +401,19 @@ class Dropdown:
 		else:
 			guiSurface.blit(dropDownDefault, (self.x, self.y))
 class TextInput:
-	def __init__(self, x, y, text=""):
+	def __init__(self, x, y, text="", placeholder=""):
 		self.text = text
 		self.active = False
 		self.x = x
 		self.y = y
-		self.text_surface = fonts[26].render(self.text, True, (0, 0, 0))
-		self.text_surface_rect = pygame.Rect(x, y, self.text_surface.get_width(), self.text_surface.get_height())
 		self.rect = pygame.Rect(x, y, 256, 64)
+		self.placeholderText = placeholder
+		self.text_surface = fonts[28].render(self.text, True, (0, 0, 0))
+		self.text_surface_rect = pygame.Rect(x+8, y, self.text_surface.get_width(), self.text_surface.get_height())
+		self.text_surface_rect.centery = self.rect.centery
+		self.placeholder = fonts[28].render(self.placeholderText, True, (179, 179, 179))
+		self.placeholder_rect = pygame.Rect(x+8, y, self.placeholder.get_width(), self.placeholder.get_height())
+		self.placeholder_rect.centery = self.rect.centery
 		self.lineRect = pygame.Rect((self.text_surface_rect.topright[0]+4, self.rect.y+4), (3, 56))
 	def eventHandle(self, event):
 		if event.type == pygame.MOUSEBUTTONDOWN:
@@ -425,9 +434,14 @@ class TextInput:
 				self.text_surface = fonts[28].render(self.text, True, (0, 0, 0))
 				self.text_surface_rect = pygame.Rect(self.x+8, self.y, self.text_surface.get_width(), self.text_surface.get_height()-8)
 				self.text_surface_rect.centery = self.rect.centery
+				self.placeholder = fonts[28].render(self.placeholderText, True, (179, 179, 179))
+				self.placeholder_rect = pygame.Rect(self.x+8, self.y, self.placeholder.get_width(), self.placeholder.get_height())
+				self.placeholder_rect.centery = self.rect.centery
 				self.lineRect = pygame.Rect((self.text_surface_rect.topright[0]+4, self.rect.y+4), (3, 56))
 	def render(self):
 		guiSurface.blit(textInputTexture, self.rect)
+		if len(self.text) == 0:
+			guiSurface.blit(self.placeholder, self.placeholder_rect)
 		guiSurface.blit(self.text_surface, self.text_surface_rect)
 		if self.active:
 			pygame.draw.rect(guiSurface, (0, 0, 0), self.lineRect)
@@ -652,7 +666,7 @@ def multiplayerAction():
 			if event.type == MOUSEBUTTONDOWN:
 				if event.button == 1:
 					if join.rect.collidepoint(event.pos):
-						singleplayerMode()
+						joinMultiplayerMenu()
 					if create.rect.collidepoint(event.pos):
 						createWorldMenu()
 					if back.rect.collidepoint(event.pos):
@@ -665,21 +679,21 @@ def multiplayerAction():
 
 		pygame.display.update()
 
-def joinServer(ip):
+def joinServer(ip, port):
 	pass
 
 def joinMultiplayerMenu():
+	last = pygame.time.get_ticks()
 	global cubeCooldown
-	ipInput = TextInput(100, 100, "")
+	ipInput = TextInput(100, 100, "", placeholder="IP")
+	portInput = TextInput(100, 200, "26675", placeholder="Порт")
 	join = Button("Присоединиться", 3, 0)
 	back = Button("Назад", 4, 0)
+	mousePressed = False
 	while 1:
 		clock.tick(60)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
-
-		join.render()
-		back.render()
 
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
@@ -697,6 +711,33 @@ def joinMultiplayerMenu():
 			except IndexError:
 				pass
 			i += 1
+
+		join.render()
+		back.render()
+
+		ipInput.render()
+		portInput.render()
+
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				sys.exit()
+			ipInput.eventHandle(event)
+			portInput.eventHandle(event)
+			if event.type == MOUSEBUTTONDOWN:
+				if event.button == 1:
+					mousePressed = True
+					if join.rect.collidepoint(event.pos):
+						print(ipInput.text)
+					elif back.rect.collidepoint(event.pos):
+						multiplayerAction()
+		guiSurface.blit(cursor, pygame.mouse.get_pos())
+			
+		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
+
+		screen.blit(guiSurface, (0,0))
+
+		pygame.display.update()
 
 
 widthInput = TextInput(100, 100, "")
@@ -744,7 +785,6 @@ def loadWorldMenu():
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
-		back.render()
 
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
@@ -762,6 +802,8 @@ def loadWorldMenu():
 			except IndexError:
 				pass
 			i += 1
+
+		back.render()
 
 		for choice in worldChoices:
 			choice[10].blit(choice[0], choice[1])
