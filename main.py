@@ -11,13 +11,14 @@ import random
 import math
 import socket
 import pickle
-import logging
+import select
 import threading
 import glob
 pygame.init()
 
 isLoading = True
 
+# screen = pygame.display.set_mode((1920, 1080), pygame.RESIZABLE | pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
 screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
 pygame.display.set_caption("ShootBox - Loading...")
 pygame.mouse.set_visible(False)
@@ -47,12 +48,12 @@ with open(os.path.join(rootPath, "config.json")) as f:
 
 # screen = pygame.display.set_mode((1920, 1080), pygame.RESIZABLE | pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
 
-screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
+# screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
 pygame.display.set_caption("ShootBox - Main Menu")
 clock = pygame.time.Clock()
 guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
 guiSurface.convert_alpha()
-	
+
 worldsPath = os.path.join(rootPath, "worlds")
 
 texturesPath = os.path.join(resourcesPath, "textures")
@@ -61,12 +62,15 @@ musicPath = os.path.join(resourcesPath, "music")
 langPath = os.path.join(resourcesPath, "lang")
 mapPath = os.path.join(resourcesPath, "maps")
 
+serverPath = os.path.join(rootPath, "server")
+
 skinTexturesPath = os.path.join(texturesPath, "skins")
 guiTexturesPath = os.path.join(texturesPath, "gui")
 itemTexturesPath = os.path.join(texturesPath, "item")
 blocksTexturesPath = os.path.join(texturesPath, "blocks")
 
 defaultSkinPath = os.path.join(skinTexturesPath, "default")
+defaultSkinWalkAnimation = os.path.join(defaultSkinPath, "walk_normal")
 
 gameMap = []
 
@@ -74,6 +78,7 @@ fonts = []
 for x in range(1, 250):
 	fonts.append(pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), x))
 
+version = "0.5"
 quality = 5
 nickname = "FireFall"
 pressedKeys = {
@@ -89,17 +94,16 @@ shotBullets = []
 pauseMenu = False
 oldScreen = None
 blockDestroyTime = 0
+isConnected = False
+playerId = 0
+
+multiplayerList = []
 
 for l in gameMap:
 	collisionRects.append(pygame.Rect(l["pos"][0]*64, l["pos"][1]*64, 64, 64))
 
-#Настраиваем подключение
-# connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# gamePort = 26675
-# gameAddress = "192.168.1.70"
-# connection.bind((gameAddress, gamePort))
-# connection.listen()
-# client, client_address = connection.accept()
+# Настраиваем подключение
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 loadingState = "Загрузка текстур..."
 
@@ -154,6 +158,12 @@ textInputTexture = pygame.image.load(os.path.join(guiTexturesPath, "input.png"))
 textInputTexture = pygame.transform.smoothscale(textInputTexture, (2**(7+quality), 2**(7+quality)))
 textInputTexture = pygame.transform.smoothscale(textInputTexture, (256, 64)).convert_alpha()
 
+playerDefaultWalkAnimation = []
+for playerTexture in glob.glob(os.path.join(defaultSkinWalkAnimation, "*.png")):
+	texture = pygame.image.load(playerTexture).convert_alpha()
+	texture = pygame.transform.smoothscale(texture, (2**(5+quality), 2**(5+quality)))
+	texture = pygame.transform.smoothscale(texture, (64, 64)).convert_alpha()
+	playerDefaultWalkAnimation.append(texture)
 
 destroyBlock = []
 for load in range(12):
@@ -195,7 +205,7 @@ def renderText(text, size, color, dest=None, align=None):
 	guiSurface.blit(textSurface, textSurface_rect)
 
 class Player(object):
-	def __init__(self):
+	def __init__(self, x, y, id):
 		self.defaultNormal = pygame.image.load(os.path.join(defaultSkinPath, "idle.png"))
 		self.defaultNormal = pygame.transform.smoothscale(self.defaultNormal, (2**(5+quality), 2**(5+quality)))
 		self.defaultNormal = pygame.transform.smoothscale(self.defaultNormal, (64, 64)).convert_alpha()
@@ -203,12 +213,16 @@ class Player(object):
 		self.defaultGunHold = pygame.image.load(os.path.join(defaultSkinPath, "gunHold.png"))
 		self.defaultGunHold = pygame.transform.smoothscale(self.defaultGunHold, (2**(5+quality), 2**(5+quality)))
 		self.defaultGunHold = pygame.transform.smoothscale(self.defaultGunHold, (64, 64)).convert_alpha()
+
 		self.skin = "default"
 		self.currentSkinTexture = None
-		self.x = gameSurface.get_width()//2
-		self.y = gameSurface.get_height()//2
-		self.rect = pygame.Rect(self.x+28, self.y+28, 36, 36)
-		self.rect.center = guiSurface.get_rect().center
+		self.x = x
+		self.y = y
+		self.id = id
+		self.rect = pygame.Rect(self.x, self.y, 36, 36)
+		self.rect.center = self.x, self.y
+		gameSurface_Rect.x -= self.x/2
+		gameSurface_Rect.y -= self.y/2
 		self.speed = 3
 		self.inventory = [
 			{"item": "wood_planks", "amount": 64, "slot": 0},
@@ -225,6 +239,7 @@ class Player(object):
 		self.angle = None
 		self.relX = None
 		self.relY = None
+		self.animationTimeIndex = 0
 	def checkForCollision(self):
 		isCollision = False
 
@@ -279,23 +294,25 @@ class Player(object):
 				self.y -= self.speed
 				gameSurface_Rect.y += self.speed
 	def render(self):
-		mouseX, mouseY = pygame.mouse.get_pos()
-		self.oldCenter = self.rect.center
-		for x in self.inventory:
-			if self.selectedSlot == x["slot"]:
-				if x["item"] == "gun":
-					self.currentSkinTexture = self.defaultGunHold
-				else:
-					self.currentSkinTexture = self.defaultNormal
-			else:
-				self.currentSkinTexture = self.defaultNormal
-		self.angle = math.atan2(mouseY-screen.get_rect().centery, mouseX-screen.get_rect().centerx)
-		self.angle = -math.degrees(self.angle)
-		self.currentSkinTexture = pygame.transform.smoothscale(self.currentSkinTexture, (64, 64))
-		self.currentSkinTexture = pygame.transform.rotozoom(self.currentSkinTexture, self.angle-90, 1)
-		self.newRect = self.currentSkinTexture.get_rect()
-		self.newRect.center = self.oldCenter
-		gameSurface.blit(self.currentSkinTexture, self.newRect)
+		if self.id == 0:
+			self.id = playerId
+		# playerPosition  = window.get_rect().center
+		self.rect = self.defaultNormal.get_rect(center = (self.x, self.y))
+		if any(value == True for value in pressedKeys.values()):
+			self.animationTimeIndex += 1
+			if self.animationTimeIndex >= len(playerDefaultWalkAnimation):
+				self.animationTimeIndex = 0
+		else:
+			self.animationTimeIndex = 0
+		mx, my = pygame.mouse.get_pos()
+		dx, dy = mx - screen.get_rect().centerx, my - screen.get_rect().centery
+		angle = math.degrees(math.atan2(-dy, dx)) - 90
+		if any(value == 0 for value in pressedKeys.values()):
+			rot_image = pygame.transform.rotozoom(playerDefaultWalkAnimation[self.animationTimeIndex], angle, 1)
+		else:
+			rot_image = pygame.transform.rotozoom(self.defaultNormal, angle, 1)
+		rot_image_rect = rot_image.get_rect(center = self.rect.center)
+		gameSurface.blit(rot_image, rot_image_rect.topleft)
 		self.nicknameDisplay_rect = self.nicknameDisplay.get_rect()
 		self.nicknameDisplay_rect.centerx = self.rect.centerx
 		self.nicknameDisplay_rect.y = self.rect.y-32
@@ -331,7 +348,7 @@ class Cube:
 		self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
 		self.angle = 0
 		self.rotateSpeed = random.uniform(0.1, 1.5)
-		self.speed = random.randint(1, 4)
+		self.speed = random.randint(2, 4)
 		self.transparency = random.randint(15, 150)
 		self.rotateMode = random.randint(0,1)
 		self.rectSurface = pygame.Surface((self.size, self.size), pygame.SRCALPHA).convert_alpha()
@@ -470,8 +487,9 @@ def menu():
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
 			last = now
-			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(350, 600)
+			if len(summonedCubes) < 12:
+				summonedCubes.append(Cube())
+				cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -510,7 +528,7 @@ def menu():
 						pygame.quit()
 						sys.exit()
 		
-		renderText("version: 0.3", 12, (255, 255, 255), ("center", "bottom"))
+		renderText("version: "+version, 12, (255, 255, 255), ("center", "bottom"))
 
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
@@ -537,8 +555,9 @@ def playmodeSelect():
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
 			last = now
-			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(350, 600)
+			if len(summonedCubes) < 12:
+				summonedCubes.append(Cube())
+				cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -589,8 +608,9 @@ def singleplayerWorldAction():
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
 			last = now
-			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(350, 600)
+			if len(summonedCubes) < 12:
+				summonedCubes.append(Cube())
+				cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -641,8 +661,9 @@ def multiplayerAction():
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
 			last = now
-			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(350, 600)
+			if len(summonedCubes) < 12:
+				summonedCubes.append(Cube())
+				cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -668,7 +689,10 @@ def multiplayerAction():
 					if join.rect.collidepoint(event.pos):
 						joinMultiplayerMenu()
 					if create.rect.collidepoint(event.pos):
-						createWorldMenu()
+						# serverStartThread = threading.Thread(target=startServer)
+						# serverStartThread.setDaemon(True)
+						# serverStartThread.start()
+						create.text = "Запуск..."
 					if back.rect.collidepoint(event.pos):
 						playmodeSelect()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
@@ -679,7 +703,8 @@ def multiplayerAction():
 
 		pygame.display.update()
 
-def joinServer(ip, port):
+def startServer():
+	# os.system('python "'+os.path.join(serverPath, "server.py")+'"')
 	pass
 
 def joinMultiplayerMenu():
@@ -698,8 +723,9 @@ def joinMultiplayerMenu():
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
 			last = now
-			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(350, 600)
+			if len(summonedCubes) < 12:
+				summonedCubes.append(Cube())
+				cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -728,7 +754,7 @@ def joinMultiplayerMenu():
 				if event.button == 1:
 					mousePressed = True
 					if join.rect.collidepoint(event.pos):
-						print(ipInput.text)
+						multiplayerGame(ipInput.text, int(portInput.text))
 					elif back.rect.collidepoint(event.pos):
 						multiplayerAction()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
@@ -740,8 +766,8 @@ def joinMultiplayerMenu():
 		pygame.display.update()
 
 
-widthInput = TextInput(100, 100, "")
-heightInput = TextInput(100, 200, "")
+widthInput = TextInput(100, 100, "", placeholder="Ширина")
+heightInput = TextInput(100, 200, "", placeholder="Высота")
 
 def loadWorldMenu():
 	last = pygame.time.get_ticks()
@@ -789,8 +815,9 @@ def loadWorldMenu():
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
 			last = now
-			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(350, 600)
+			if len(summonedCubes) < 12:
+				summonedCubes.append(Cube())
+				cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -804,6 +831,9 @@ def loadWorldMenu():
 			i += 1
 
 		back.render()
+
+		if len(worldChoices) == 0:
+			renderText("Нет доступных миров", 24, (255, 255, 255), ("center", 48))
 
 		for choice in worldChoices:
 			choice[10].blit(choice[0], choice[1])
@@ -829,10 +859,11 @@ def loadWorldMenu():
 					for x in range(len(worldChoices)):
 						if worldChoices[x][3].collidepoint(pygame.mouse.get_pos()):
 							loadMap(savedWorlds[x])
-							singleplayerMode()
+							singleplayerGame()
 						if worldChoices[x][7].collidepoint(pygame.mouse.get_pos()):
 							print("Функция ещё не сделана!!!")
-			
+					if back.rect.collidepoint(event.pos):
+						singleplayerWorldAction()
 		
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
@@ -857,8 +888,9 @@ def createWorldMenu():
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
 			last = now
-			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(350, 600)
+			if len(summonedCubes) < 12:
+				summonedCubes.append(Cube())
+				cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -870,6 +902,7 @@ def createWorldMenu():
 			except IndexError:
 				pass
 			i += 1
+
 		create.render()
 		back.render()
 
@@ -887,7 +920,7 @@ def createWorldMenu():
 					mousePressed = True
 					if create.rect.collidepoint(event.pos):
 						generateMap()
-						singleplayerMode()
+						singleplayerGame()
 					elif back.rect.collidepoint(event.pos):
 						singleplayerWorldAction()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
@@ -902,26 +935,25 @@ def loadMap(world):
 	global gameSurface, gameSurface_Rect, player, gameMap
 	gameSurface = pygame.Surface((world["size"][0]*64, world["size"][1]*64)).convert_alpha()
 	gameSurface_Rect = gameSurface.get_rect()
-	gameSurface_Rect.x = 0
-	gameSurface_Rect.y = 0
+	gameSurface_Rect.x, gameSurface_Rect.y = screen.get_rect().center
 	gameMap = world["map"]
 	for block in gameMap:
 		collisionRects.append(pygame.Rect(block["pos"][0]*64, block["pos"][1]*64, 64, 64))
-	player = Player()
+	player = Player(64, 64, 0)
 
 def generateMap():
 	global gameSurface, gameSurface_Rect, player
 	gameSurface = pygame.Surface((int(widthInput.getInput())*64, int(heightInput.getInput())*64)).convert_alpha()
 	gameSurface_Rect = gameSurface.get_rect()
-	gameSurface_Rect.x = 0
-	gameSurface_Rect.y = 0
+	gameSurface_Rect.x, gameSurface_Rect.y = screen.get_rect().center
 	for block in range(random.randint(2, int(widthInput.text)-2)):
-		randomPos = [random.randint(0,16), random.randint(0,16)]
+		randomPos = [random.randint(0,int(widthInput.text)), random.randint(0,int(widthInput.text))]
 		gameMap.append(
 			{"block": "tree", "pos": [randomPos[0], randomPos[1]]}
 		)
 		collisionRects.append(pygame.Rect(randomPos[0]*64+24, randomPos[1]*64+24, 16, 16))
-	player = Player()
+	player = Player(64, 64, 0)
+	player2 = Player(64, 64, 0)
 
 def gameSettings():
 	last = pygame.time.get_ticks()
@@ -935,8 +967,9 @@ def gameSettings():
 		now = pygame.time.get_ticks()
 		if now - last >= cubeCooldown:
 			last = now
-			summonedCubes.append(Cube())
-			cubeCooldown = random.randint(350, 600)
+			if len(summonedCubes) < 12:
+				summonedCubes.append(Cube())
+				cubeCooldown = random.randint(350, 600)
 		
 		i = 0
 		while i <= len(summonedCubes):
@@ -965,8 +998,8 @@ def gameSettings():
 
 		pygame.display.update()
 
-def singleplayerMode():
-	pygame.display.set_caption("ShootBox - Game")
+def singleplayerGame():
+	pygame.display.set_caption("ShootBox - Playing Singleplayer")
 	global quality, screen, guiSurface, gameSurface, gameSurface_Rect, pauseMenu, blockDestroyTime, inventoryGui, inventoryGui_rect
 	last = pygame.time.get_ticks()
 
@@ -1131,6 +1164,262 @@ def singleplayerMode():
 				pass
 			i += 1
 		player.render()
+
+		for b in gameMap:
+			#Рендер блоков
+			if b["block"] == "tree":
+				gameSurface.blit(tree, (b["pos"][0]*64, b["pos"][1]*64))
+			elif b["block"] == "wood_planks":
+				gameSurface.blit(woodPlanks, (b["pos"][0]*64, b["pos"][1]*64))
+			
+			if mousePressed == "left":
+				if b["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+					gameSurface.blit(destroyBlock[blockDestroyTime], (b["pos"][0]*64, b["pos"][1]*64))
+			
+			#Рендер квадрата
+			if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+				if not config["highlightSurface"]:
+					if gameMap[b]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+						pygame.draw.rect(gameSurface, (255, 255, 255), (gameMap[b]["pos"][0]*64, gameMap[b]["pos"][1]*64, 64, 64), 3)
+				else:
+					pygame.draw.rect(gameSurface, (255, 255, 255), ((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64), 2)
+
+		s = 0
+		c = 0
+		if len(collisionRects) > 0:
+			if len(shotBullets) > 0:
+				while c <= len(collisionRects):
+					while s < len(shotBullets):
+						if collisionRects[c].colliderect(shotBullets[s].rect):
+							shotBullets.remove(shotBullets[s])
+							s -= 1
+						s += 1
+					c += 1
+
+		for h in range(8):
+			guiSurface.blit(hotBar, (guiSurface.get_width()//2-256+h*64, guiSurface.get_height()-64))
+		for x in player.inventory:
+			if x["item"] == "gun":
+				guiSurface.blit(gunItem, (guiSurface.get_width()//2-256+x["slot"]*64, guiSurface.get_height()-64))
+			if x["item"] == "wood_planks":
+				if x["amount"] != 0:
+					guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+x["slot"]*64+8, guiSurface.get_height()-64+8))
+					renderText(str(x["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+x["slot"]*64+32, guiSurface.get_height()-64+32))
+		pygame.draw.rect(guiSurface, (255, 0, 0), (guiSurface.get_width()//2-256+player.selectedSlot*64, guiSurface.get_height()-64, 64, 64), 3)
+
+		if pauseMenu:
+			guiSurface.blit(inventoryGui, inventoryGui_rect)
+			guiSurface.blit(player.defaultNormal, (200, 200))
+
+		for x in player.inventory:
+			if player.selectedSlot == x["slot"]:
+				if x["item"] == "gun":
+					guiSurface.blit(gunCursor, (pygame.mouse.get_pos()[0]-32, pygame.mouse.get_pos()[1]-32))
+				else:
+					guiSurface.blit(cursor, pygame.mouse.get_pos())
+			else:
+				guiSurface.blit(cursor, pygame.mouse.get_pos())
+
+		renderText("FPS: "+str(int(clock.get_fps())), 36, (255, 255, 255), (5,5))
+
+		screen.blit(gameSurface, gameSurface_Rect)
+		screen.blit(guiSurface, (0,0))
+
+		pygame.display.update()
+
+def multiplayerGame(ip, port):
+	global quality, screen, guiSurface, gameSurface, gameSurface_Rect, pauseMenu, blockDestroyTime, inventoryGui, inventoryGui_rect, isConnected, player, gameMap, multiplayerList
+	isConnected = True
+	sock.connect((ip, port))
+
+	gameSurface = pygame.Surface((24*64, 24*64)).convert_alpha()
+	gameSurface_Rect = gameSurface.get_rect()
+	gameSurface_Rect.x = 0
+	gameSurface_Rect.y = 0
+	for block in gameMap:
+		collisionRects.append(pygame.Rect(block["pos"][0]*64, block["pos"][1]*64, 64, 64))
+	player = Player(64, 64, 0)
+
+	pygame.display.set_caption("ShootBox - Playing LAN Multiplayer")
+	last = pygame.time.get_ticks()
+
+	mousePressed = False
+
+	while 1:
+		clock.tick(60)
+		screen.fill((42, 170, 255))
+		gameSurface.fill((29, 189, 104))
+		guiSurface.fill((0,0,0,0))
+		
+		oldScreen = [screen.get_width(), screen.get_height()]
+		# oldGameSurface = [gameSurface.get_width(), gameSurface.get_height()]
+
+		ins, outs, ex = select.select([sock], [], [], 0)
+		for inm in ins: 
+			gameEvent = pickle.loads(inm.recv(2048))
+			if gameEvent[0] == 'idUpdate':
+				playerid = gameEvent[1]
+				print(playerid)
+			if gameEvent[0] == 'playerPos':
+				gameEvent.pop(0)
+				multiplayerList = []
+				for minion in gameEvent:
+					if minion[0] != playerid:
+						multiplayerList.append(Player(minion[1], minion[2], minion[0]))
+
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				sys.exit()
+			elif event.type == KEYDOWN:
+				if event.key == K_w:
+					pressedKeys["up"] = True
+				elif event.key == K_s:
+					pressedKeys["down"] = True
+				elif event.key == K_a:
+					pressedKeys["left"] = True
+				elif event.key == K_d:
+					pressedKeys["right"] = True
+				elif event.key == K_e:
+					pauseMenu = not pauseMenu
+				elif event.key == K_1:
+					player.selectedSlot = 0
+				elif event.key == K_2:
+					player.selectedSlot = 1
+				elif event.key == K_3:
+					player.selectedSlot = 2
+				elif event.key == K_4:
+					player.selectedSlot = 3
+				elif event.key == K_5:
+					player.selectedSlot = 4
+				elif event.key == K_6:
+					player.selectedSlot = 5
+				elif event.key == K_7:
+					player.selectedSlot = 6
+				elif event.key == K_8:
+					player.selectedSlot = 7
+			elif event.type == KEYUP:
+				if event.key == K_w:
+					pressedKeys["up"] = False
+				elif event.key == K_s:
+					pressedKeys["down"] = False
+				elif event.key == K_a:
+					pressedKeys["left"] = False
+				elif event.key == K_d:
+					pressedKeys["right"] = False
+			elif event.type == MOUSEBUTTONDOWN:
+				if event.button == 3:
+					mousePressed = "right"
+				if event.button == 1:
+					mousePressed = "left"
+				if event.button == 4:
+					if player.selectedSlot == 7:
+						player.selectedSlot = 0
+					else:
+						player.selectedSlot += 1
+				if event.button == 5:
+					if player.selectedSlot == 0:
+						player.selectedSlot = 7
+					else:
+						player.selectedSlot -= 1
+			elif event.type == MOUSEBUTTONUP:
+				mousePressed = False
+			elif event.type == VIDEORESIZE:
+				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
+				guiSurface.convert_alpha()
+				gameSurface_Rect.x += ( screen.get_width() - oldScreen[0])//2
+				gameSurface_Rect.y += ( screen.get_height() - oldScreen[1])//2
+				scalingIndex = inventoryGui.get_height() / (screen.get_height()-8)
+				inventoryGui = pygame.transform.smoothscale(inventoryGui, (inventoryGui.get_width()/scalingIndex, screen.get_height()-8))
+				inventoryGui_rect = inventoryGui.get_rect()
+				inventoryGui_rect.center = screen.get_rect().center
+
+		if mousePressed == "right":
+			now = pygame.time.get_ticks()
+			if now - last >= 250:
+				last = now
+				for playerSlot in player.inventory:
+					if player.selectedSlot == playerSlot["slot"]:
+						if playerSlot["item"] == "gun":
+							pass
+						elif playerSlot["item"] == "wood_planks":
+							if playerSlot["amount"] != 0:
+								if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+									sameBlock = False
+									for block in gameMap:
+										sameBlock = False
+										if block["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+											sameBlock = True
+											break
+										
+									if not sameBlock:
+										collisionRects.append(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+										gameMap.append({"block": "wood_planks", "pos": [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]})
+										playerSlot["amount"] -= 1
+									if player.rect.colliderect(collisionRects[-1]):
+										collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+										gameMap.pop(-1)
+										playerSlot["amount"] += 1
+		elif mousePressed == "left":
+			now = pygame.time.get_ticks()
+			for slot in player.inventory:
+				if player.selectedSlot == slot["slot"]:
+					if slot["item"] == "gun":
+						# shotBullets.append(Bullet(player.angle, player.rect.x, player.rect.y))
+						pass
+					else:
+						if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+							i = 0
+							while i <= len(gameMap):
+								try:
+									if gameMap[i]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+										if now - last >= 250:
+											last = now
+											if blockDestroyTime < 11:
+												blockDestroyTime += 1
+										if blockDestroyTime >= 11:
+											if gameMap[i]['block'] == "wood_planks":
+												collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+												gameMap.pop(i)
+												i -= 1
+												if slot["item"] == "wood_planks":
+													slot["amount"] += 1
+											elif gameMap[i]["block"] == "tree":
+												collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
+												gameMap.pop(i)
+												i -= 1
+											blockDestroyTime = 0
+								except IndexError:
+									pass
+								except ValueError:
+									pass
+								i += 1
+		else:
+			blockDestroyTime = 0
+
+		if pressedKeys["up"]:
+			player.moveUp()
+		if pressedKeys["down"]:
+			player.moveDown()
+		if pressedKeys["left"]:
+			player.moveLeft()
+		elif pressedKeys["right"]:
+			player.moveRight()
+
+		i = 0
+		while i <= len(shotBullets):
+			try:
+				shotBullets[i].render()
+				if not gameSurface.get_rect().colliderect(shotBullets[i].rect):
+					shotBullets.remove(shotBullets[i])
+					i -= 1
+			except IndexError:
+				pass
+			i += 1
+		player.render()
+
+		for m in multiplayerList:
+			m.render()
 
 		for b in gameMap:
 			#Рендер блоков
