@@ -132,8 +132,9 @@ gunItem = pygame.transform.smoothscale(gunItem, (2**(5+quality), 2**(5+quality))
 gunItem = pygame.transform.smoothscale(gunItem, (64, 64)).convert_alpha()
 
 inventoryGui = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
-# inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
+inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
 scalingIndex = inventoryGui.get_height() / (screen.get_height()-8)
+
 inventoryGui = pygame.transform.smoothscale(inventoryGui, (inventoryGui.get_width()/scalingIndex, screen.get_height()-8))
 inventoryGui_rect = inventoryGui.get_rect()
 inventoryGui_rect.center = screen.get_rect().center
@@ -185,6 +186,7 @@ for world in glob.glob(os.path.join(worldsPath, "*.json")):
 	except IsADirectoryError:
 		pass
 
+
 def renderText(text, size, color, dest=None, align=None):
 	textSurface = fonts[size].render(text, True, color)
 	textSurface_rect = textSurface.get_rect()
@@ -221,12 +223,12 @@ class Player(object):
 		self.id = id
 		self.rect = pygame.Rect(self.x, self.y, 36, 36)
 		self.rect.center = self.x, self.y
-		gameSurface_Rect.x -= self.x/2
-		gameSurface_Rect.y -= self.y/2
+		gameSurface_Rect.x -= self.x     
+		gameSurface_Rect.y -= self.y
 		self.speed = 3
 		self.inventory = [
 			{"item": "wood_planks", "amount": 64, "slot": 0},
-			{"item": "gun", "slot": 1}
+			{"item": "gun", "amount": 32, "slot": 1}
 		]
 		self.selectedSlot = 0
 		self.skills = []
@@ -953,7 +955,6 @@ def generateMap():
 		)
 		collisionRects.append(pygame.Rect(randomPos[0]*64+24, randomPos[1]*64+24, 16, 16))
 	player = Player(64, 64, 0)
-	player2 = Player(64, 64, 0)
 
 def gameSettings():
 	last = pygame.time.get_ticks()
@@ -1000,7 +1001,7 @@ def gameSettings():
 
 def singleplayerGame():
 	pygame.display.set_caption("ShootBox - Playing Singleplayer")
-	global quality, screen, guiSurface, gameSurface, gameSurface_Rect, pauseMenu, blockDestroyTime, inventoryGui, inventoryGui_rect
+	global quality, screen, guiSurface, gameSurface, gameSurface_Rect, pauseMenu, blockDestroyTime, inventoryGui, inventoryGui_rect, scalingIndex
 	last = pygame.time.get_ticks()
 
 	mousePressed = False
@@ -1210,6 +1211,14 @@ def singleplayerGame():
 		if pauseMenu:
 			guiSurface.blit(inventoryGui, inventoryGui_rect)
 			guiSurface.blit(player.defaultNormal, (200, 200))
+			for inventoryItem in player.inventory:
+				if inventoryItem["item"] == "gun":
+					guiSurface.blit(pygame.transform.smoothscale(gunItem, (48, 48)), ((24+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((24+1489)/scalingIndex)))
+				elif inventoryItem["item"] == "wood_planks":
+					guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), ((24+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((24+1489)/scalingIndex)))
+				renderText(str(inventoryItem["amount"]), 16, (255, 255, 255), ((145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x+32, inventoryGui_rect.y+((1489)/scalingIndex)+32))
+				pygame.draw.circle(guiSurface, (255, 0, 0), (inventoryGui_rect.x, inventoryGui_rect.y), 2)
+				
 
 		for x in player.inventory:
 			if player.selectedSlot == x["slot"]:
