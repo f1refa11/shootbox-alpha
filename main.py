@@ -131,11 +131,11 @@ gunItem = pygame.image.load(os.path.join(itemTexturesPath, "gun.png"))
 gunItem = pygame.transform.smoothscale(gunItem, (2**(5+quality), 2**(5+quality)))
 gunItem = pygame.transform.smoothscale(gunItem, (64, 64)).convert_alpha()
 
-inventoryGui = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
-inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
-scalingIndex = inventoryGui.get_height() / (screen.get_height()-8)
+inventoryGui_source = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
+# inventoryGui = pygame.transform.smoothscale(inventoryGui, (80*(2**quality), 2**(6+quality)))
+scalingIndex = inventoryGui_source.get_height() / (screen.get_height()-8)
 
-inventoryGui = pygame.transform.smoothscale(inventoryGui, (inventoryGui.get_width()/scalingIndex, screen.get_height()-8))
+inventoryGui = pygame.transform.smoothscale(inventoryGui_source, (inventoryGui_source.get_width()/scalingIndex, screen.get_height()-8))
 inventoryGui_rect = inventoryGui.get_rect()
 inventoryGui_rect.center = screen.get_rect().center
 
@@ -221,14 +221,15 @@ class Player(object):
 		self.x = x
 		self.y = y
 		self.id = id
-		self.rect = pygame.Rect(self.x, self.y, 36, 36)
+		self.rect = pygame.Rect(self.x+28, self.y+28, 36, 36)
 		self.rect.center = self.x, self.y
 		gameSurface_Rect.x -= self.x     
 		gameSurface_Rect.y -= self.y
 		self.speed = 3
 		self.inventory = [
 			{"item": "wood_planks", "amount": 64, "slot": 0},
-			{"item": "gun", "amount": 32, "slot": 1}
+			{"item": "gun", "amount": 32, "slot": 1},
+			{"item": "wood_planks", "amount": 38, "row": 0, "col": 1}
 		]
 		self.selectedSlot = 0
 		self.skills = []
@@ -296,25 +297,24 @@ class Player(object):
 				self.y -= self.speed
 				gameSurface_Rect.y += self.speed
 	def render(self):
-		if self.id == 0:
-			self.id = playerId
-		# playerPosition  = window.get_rect().center
-		self.rect = self.defaultNormal.get_rect(center = (self.x, self.y))
-		if any(value == True for value in pressedKeys.values()):
-			self.animationTimeIndex += 1
-			if self.animationTimeIndex >= len(playerDefaultWalkAnimation):
-				self.animationTimeIndex = 0
-		else:
-			self.animationTimeIndex = 0
-		mx, my = pygame.mouse.get_pos()
-		dx, dy = mx - screen.get_rect().centerx, my - screen.get_rect().centery
-		angle = math.degrees(math.atan2(-dy, dx)) - 90
-		if any(value == 0 for value in pressedKeys.values()):
-			rot_image = pygame.transform.rotozoom(playerDefaultWalkAnimation[self.animationTimeIndex], angle, 1)
-		else:
-			rot_image = pygame.transform.rotozoom(self.defaultNormal, angle, 1)
-		rot_image_rect = rot_image.get_rect(center = self.rect.center)
-		gameSurface.blit(rot_image, rot_image_rect.topleft)
+		mouseX, mouseY = pygame.mouse.get_pos()
+		self.oldCenter = self.rect.center
+		for x in self.inventory:
+			if "slot" in x:
+				if self.selectedSlot == x["slot"]:
+					if x["item"] == "gun":
+						self.currentSkinTexture = self.defaultGunHold
+					else:
+						self.currentSkinTexture = self.defaultNormal
+				else:
+					self.currentSkinTexture = self.defaultNormal
+		self.angle = math.atan2(mouseY-screen.get_rect().centery, mouseX-screen.get_rect().centerx)
+		self.angle = -math.degrees(self.angle)
+		self.currentSkinTexture = pygame.transform.smoothscale(self.currentSkinTexture, (64, 64))
+		self.currentSkinTexture = pygame.transform.rotozoom(self.currentSkinTexture, self.angle-90, 1)
+		self.newRect = self.currentSkinTexture.get_rect()
+		self.newRect.center = self.oldCenter
+		gameSurface.blit(self.currentSkinTexture, self.newRect)
 		self.nicknameDisplay_rect = self.nicknameDisplay.get_rect()
 		self.nicknameDisplay_rect.centerx = self.rect.centerx
 		self.nicknameDisplay_rect.y = self.rect.y-32
@@ -1077,8 +1077,8 @@ def singleplayerGame():
 				guiSurface.convert_alpha()
 				gameSurface_Rect.x += ( screen.get_width() - oldScreen[0])//2
 				gameSurface_Rect.y += ( screen.get_height() - oldScreen[1])//2
-				scalingIndex = inventoryGui.get_height() / (screen.get_height()-8)
-				inventoryGui = pygame.transform.smoothscale(inventoryGui, (inventoryGui.get_width()/scalingIndex, screen.get_height()-8))
+				scalingIndex = inventoryGui_source.get_height() / (screen.get_height()-8)
+				inventoryGui = pygame.transform.smoothscale(inventoryGui_source, (inventoryGui_source.get_width()/scalingIndex, screen.get_height()-8))
 				inventoryGui_rect = inventoryGui.get_rect()
 				inventoryGui_rect.center = screen.get_rect().center
 
@@ -1087,18 +1087,19 @@ def singleplayerGame():
 			if now - last >= 250:
 				last = now
 				for playerSlot in player.inventory:
-					if player.selectedSlot == playerSlot["slot"]:
-						if playerSlot["item"] == "gun":
-							pass
-						elif playerSlot["item"] == "wood_planks":
-							if playerSlot["amount"] != 0:
-								if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
-									sameBlock = False
-									for block in gameMap:
+					if "slot" in playerSlot:
+						if player.selectedSlot == playerSlot["slot"]:
+							if playerSlot["item"] == "gun":
+								pass
+							elif playerSlot["item"] == "wood_planks":
+								if playerSlot["amount"] != 0:
+									if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
 										sameBlock = False
-										if block["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
-											sameBlock = True
-											break
+										for block in gameMap:
+											sameBlock = False
+											if block["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+												sameBlock = True
+												break
 										
 									if not sameBlock:
 										collisionRects.append(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
@@ -1111,37 +1112,38 @@ def singleplayerGame():
 		elif mousePressed == "left":
 			now = pygame.time.get_ticks()
 			for slot in player.inventory:
-				if player.selectedSlot == slot["slot"]:
-					if slot["item"] == "gun":
-						# shotBullets.append(Bullet(player.angle, player.rect.x, player.rect.y))
-						pass
-					else:
-						if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
-							i = 0
-							while i <= len(gameMap):
-								try:
-									if gameMap[i]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
-										if now - last >= 250:
-											last = now
-											if blockDestroyTime < 11:
-												blockDestroyTime += 1
-										if blockDestroyTime >= 11:
-											if gameMap[i]['block'] == "wood_planks":
-												collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
-												gameMap.pop(i)
-												i -= 1
-												if slot["item"] == "wood_planks":
-													slot["amount"] += 1
-											elif gameMap[i]["block"] == "tree":
-												collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
-												gameMap.pop(i)
-												i -= 1
-											blockDestroyTime = 0
-								except IndexError:
-									pass
-								except ValueError:
-									pass
-								i += 1
+				if "slot" in slot:
+					if player.selectedSlot == slot["slot"]:
+						if slot["item"] == "gun":
+							# shotBullets.append(Bullet(player.angle, player.rect.x, player.rect.y))
+							pass
+						else:
+							if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+								i = 0
+								while i <= len(gameMap):
+									try:
+										if gameMap[i]["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+											if now - last >= 250:
+												last = now
+												if blockDestroyTime < 11:
+													blockDestroyTime += 1
+											if blockDestroyTime >= 11:
+												if gameMap[i]['block'] == "wood_planks":
+													collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+													gameMap.pop(i)
+													i -= 1
+													if slot["item"] == "wood_planks":
+														slot["amount"] += 1
+												elif gameMap[i]["block"] == "tree":
+													collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
+													gameMap.pop(i)
+													i -= 1
+												blockDestroyTime = 0
+									except IndexError:
+										pass
+									except ValueError:
+										pass
+									i += 1
 		else:
 			blockDestroyTime = 0
 
@@ -1204,30 +1206,38 @@ def singleplayerGame():
 				guiSurface.blit(gunItem, (guiSurface.get_width()//2-256+x["slot"]*64, guiSurface.get_height()-64))
 			if x["item"] == "wood_planks":
 				if x["amount"] != 0:
-					guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+x["slot"]*64+8, guiSurface.get_height()-64+8))
-					renderText(str(x["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+x["slot"]*64+32, guiSurface.get_height()-64+32))
+					if "slot" in x:
+						guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+x["slot"]*64+8, guiSurface.get_height()-64+8))
+						renderText(str(x["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+x["slot"]*64+32, guiSurface.get_height()-64+32))
 		pygame.draw.rect(guiSurface, (255, 0, 0), (guiSurface.get_width()//2-256+player.selectedSlot*64, guiSurface.get_height()-64, 64, 64), 3)
 
 		if pauseMenu:
 			guiSurface.blit(inventoryGui, inventoryGui_rect)
 			guiSurface.blit(player.defaultNormal, (200, 200))
 			for inventoryItem in player.inventory:
-				if inventoryItem["item"] == "gun":
-					guiSurface.blit(pygame.transform.smoothscale(gunItem, (48, 48)), ((24+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((24+1489)/scalingIndex)))
-				elif inventoryItem["item"] == "wood_planks":
-					guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), ((24+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((24+1489)/scalingIndex)))
-				renderText(str(inventoryItem["amount"]), 16, (255, 255, 255), ((145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x+32, inventoryGui_rect.y+((1489)/scalingIndex)+32))
-				pygame.draw.circle(guiSurface, (255, 0, 0), (inventoryGui_rect.x, inventoryGui_rect.y), 2)
+				if "slot" in inventoryItem:
+					if inventoryItem["item"] == "gun":
+						guiSurface.blit(pygame.transform.smoothscale(gunItem, (206/scalingIndex, 206/scalingIndex)), ((26+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((26+1489)/scalingIndex)))
+					elif inventoryItem["item"] == "wood_planks":
+						guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (206/scalingIndex, 206/scalingIndex)), ((26+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((26+1489)/scalingIndex)))
+					renderText(str(inventoryItem["amount"]), int(84/scalingIndex), (255, 255, 255), ((100+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((170+1489)/scalingIndex)))
+				if "row" in inventoryItem:
+					if inventoryItem["item"] == "gun":
+						guiSurface.blit(pygame.transform.smoothscale(gunItem, (206/scalingIndex, 206/scalingIndex)), (inventoryGui_rect.x+(745+inventoryItem["row"]*289)/scalingIndex, inventoryGui_rect.y+(233+inventoryItem["col"]*321)))
+					elif inventoryItem["item"] == "wood_planks":
+						guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (206/scalingIndex, 206/scalingIndex)), (inventoryGui_rect.x+(747+inventoryItem["row"]*289)/scalingIndex, inventoryGui_rect.y+(235+inventoryItem["col"]*321)/scalingIndex))
+					renderText(str(inventoryItem["amount"]), int(84/scalingIndex), (255, 255, 255), (inventoryGui_rect.x+(820+inventoryItem["row"]*289)/scalingIndex, inventoryGui_rect.y+(378+inventoryItem["col"]*321)/scalingIndex))
 				
 
 		for x in player.inventory:
-			if player.selectedSlot == x["slot"]:
-				if x["item"] == "gun":
-					guiSurface.blit(gunCursor, (pygame.mouse.get_pos()[0]-32, pygame.mouse.get_pos()[1]-32))
+			if "slot" in x:
+				if player.selectedSlot == x["slot"]:
+					if x["item"] == "gun":
+						guiSurface.blit(gunCursor, (pygame.mouse.get_pos()[0]-32, pygame.mouse.get_pos()[1]-32))
+					else:
+						guiSurface.blit(cursor, pygame.mouse.get_pos())
 				else:
 					guiSurface.blit(cursor, pygame.mouse.get_pos())
-			else:
-				guiSurface.blit(cursor, pygame.mouse.get_pos())
 
 		renderText("FPS: "+str(int(clock.get_fps())), 36, (255, 255, 255), (5,5))
 
