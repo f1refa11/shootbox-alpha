@@ -1007,6 +1007,7 @@ def singleplayerGame():
 	mousePressed = False
 
 	while 1:
+		sameBlock = False
 		clock.tick(60)
 		screen.fill((42, 170, 255))
 		gameSurface.fill((29, 189, 104))
@@ -1078,7 +1079,7 @@ def singleplayerGame():
 				gameSurface_Rect.x += ( screen.get_width() - oldScreen[0])//2
 				gameSurface_Rect.y += ( screen.get_height() - oldScreen[1])//2
 				scalingIndex = inventoryGui_source.get_height() / (screen.get_height()-8)
-				inventoryGui = pygame.transform.smoothscale(inventoryGui_source, (inventoryGui_source.get_width()/scalingIndex, screen.get_height()-8))
+				inventoryGui = pygame.transform.smoothscale(inventoryGui_source, (inventoryGui_source.get_width()/scalingIndex, screen.get_height()-8)).convert_alpha()
 				inventoryGui_rect = inventoryGui.get_rect()
 				inventoryGui_rect.center = screen.get_rect().center
 
@@ -1101,14 +1102,14 @@ def singleplayerGame():
 												sameBlock = True
 												break
 										
-									if not sameBlock:
-										collisionRects.append(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
-										gameMap.append({"block": "wood_planks", "pos": [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]})
-										playerSlot["amount"] -= 1
-									if player.rect.colliderect(collisionRects[-1]):
-										collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
-										gameMap.pop(-1)
-										playerSlot["amount"] += 1
+										if not sameBlock:
+											collisionRects.append(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+											gameMap.append({"block": "wood_planks", "pos": [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]})
+											playerSlot["amount"] -= 1
+										if player.rect.colliderect(collisionRects[-1]):
+											collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
+											gameMap.pop(-1)
+											playerSlot["amount"] += 1
 		elif mousePressed == "left":
 			now = pygame.time.get_ticks()
 			for slot in player.inventory:
