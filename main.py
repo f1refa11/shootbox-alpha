@@ -70,7 +70,8 @@ itemTexturesPath = os.path.join(texturesPath, "item")
 blocksTexturesPath = os.path.join(texturesPath, "blocks")
 
 defaultSkinPath = os.path.join(skinTexturesPath, "default")
-defaultSkinWalkAnimation = os.path.join(defaultSkinPath, "walk_normal")
+defaultSkinWalkAnimation = os.path.join(defaultSkinPath, "walk")
+defaultSkinBreakAnimation = os.path.join(defaultSkinPath, "block_break")
 
 gameMap = []
 
@@ -96,6 +97,7 @@ oldScreen = None
 blockDestroyTime = 0
 isConnected = False
 playerId = 0
+mousePressed = False
 
 multiplayerList = []
 
@@ -166,14 +168,19 @@ for playerTexture in glob.glob(os.path.join(defaultSkinWalkAnimation, "*.png")):
 	texture = pygame.transform.smoothscale(texture, (64, 64)).convert_alpha()
 	playerDefaultWalkAnimation.append(texture)
 
+playerDefaultBreakAnimation = []
+for playerTexture in glob.glob(os.path.join(defaultSkinBreakAnimation, "*.png")):
+	texture = pygame.image.load(playerTexture).convert_alpha()
+	texture = pygame.transform.smoothscale(texture, (2**(5+quality), 2**(5+quality)))
+	texture = pygame.transform.smoothscale(texture, (64, 64)).convert_alpha()
+	playerDefaultBreakAnimation.append(texture)
+
 destroyBlock = []
 for load in range(12):
 	texture = pygame.image.load(os.path.join(blocksTexturesPath, "blockDestroy_"+str(load)+".png"))
 	texture = pygame.transform.smoothscale(texture, (2**(5+quality), 2**(5+quality)))
 	texture = pygame.transform.smoothscale(texture, (64, 64)).convert_alpha()
 	destroyBlock.append(texture)
-
-del texture
 
 logo = pygame.image.load(os.path.join(guiTexturesPath, "logo.png")).convert_alpha()
 
@@ -218,6 +225,7 @@ class Player(object):
 
 		self.skin = "default"
 		self.currentSkinTexture = None
+		self.animation = None
 		self.x = x
 		self.y = y
 		self.id = id
@@ -308,10 +316,24 @@ class Player(object):
 						self.currentSkinTexture = self.defaultNormal
 				else:
 					self.currentSkinTexture = self.defaultNormal
+		if mousePressed == "left":
+			self.animationTimeIndex += 1
+			if self.animationTimeIndex >= len(playerDefaultBreakAnimation):
+				self.animationTimeIndex = 0			
+		elif any(value == True for value in pressedKeys.values()):
+			self.animationTimeIndex += 1
+			if self.animationTimeIndex >= len(playerDefaultWalkAnimation):
+				self.animationTimeIndex = 0
+		else:
+			self.animationTimeIndex = 0
 		self.angle = math.atan2(mouseY-screen.get_rect().centery, mouseX-screen.get_rect().centerx)
 		self.angle = -math.degrees(self.angle)
-		self.currentSkinTexture = pygame.transform.smoothscale(self.currentSkinTexture, (64, 64))
-		self.currentSkinTexture = pygame.transform.rotozoom(self.currentSkinTexture, self.angle-90, 1)
+		if mousePressed == "left":
+			self.currentSkinTexture = pygame.transform.rotozoom(playerDefaultBreakAnimation[self.animationTimeIndex], self.angle-90, 1)
+		elif any(value == 0 for value in pressedKeys.values()):
+			self.currentSkinTexture = pygame.transform.rotozoom(playerDefaultWalkAnimation[self.animationTimeIndex], self.angle-90, 1)
+		else:
+			self.currentSkinTexture = pygame.transform.rotozoom(self.currentSkinTexture, self.angle-90, 1)
 		self.newRect = self.currentSkinTexture.get_rect()
 		self.newRect.center = self.oldCenter
 		gameSurface.blit(self.currentSkinTexture, self.newRect)
@@ -466,6 +488,16 @@ class TextInput:
 			pygame.draw.rect(guiSurface, (0, 0, 0), self.lineRect)
 	def getInput(self):
 		return self.text
+
+class Item:
+	def __init__(self, item, x, y):
+		self.item = item
+		self.x = x
+		self.y = y
+	def render(self):
+		if self.item == "wood_planks":
+			gameSurface.blit(pygame.transform.scale(woodPlanks, (32, 32)), (self.x, self.y))
+
 
 # gameSurface_Rect.x = 
 isLoading = False
@@ -1001,7 +1033,7 @@ def gameSettings():
 
 def singleplayerGame():
 	pygame.display.set_caption("ShootBox - Playing Singleplayer")
-	global quality, screen, guiSurface, gameSurface, gameSurface_Rect, pauseMenu, blockDestroyTime, inventoryGui, inventoryGui_rect, scalingIndex
+	global quality, screen, guiSurface, gameSurface, gameSurface_Rect, pauseMenu, blockDestroyTime, inventoryGui, inventoryGui_rect, scalingIndex, mousePressed
 	last = pygame.time.get_ticks()
 
 	mousePressed = False
