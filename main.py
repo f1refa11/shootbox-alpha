@@ -64,14 +64,15 @@ mapPath = os.path.join(resourcesPath, "maps")
 
 serverPath = os.path.join(rootPath, "server")
 
-skinTexturesPath = os.path.join(texturesPath, "skins")
+playerTexturesPath = os.path.join(texturesPath, "player")
 guiTexturesPath = os.path.join(texturesPath, "gui")
 itemTexturesPath = os.path.join(texturesPath, "item")
 blocksTexturesPath = os.path.join(texturesPath, "blocks")
 
-defaultSkinPath = os.path.join(skinTexturesPath, "default")
-defaultSkinWalkAnimation = os.path.join(defaultSkinPath, "walk")
-defaultSkinBreakAnimation = os.path.join(defaultSkinPath, "block_break")
+walkAnimationPath = os.path.join(playerTexturesPath, "walk")
+walkGunAnimationPath = os.path.join(playerTexturesPath, "walk_gun")
+breakAnimationPath = os.path.join(playerTexturesPath, "block_break")
+breakGunAnimationPath = os.path.join(playerTexturesPath, "block_break_gun")
 
 gameMap = []
 
@@ -169,19 +170,33 @@ textInputTexture = pygame.image.load(os.path.join(guiTexturesPath, "input.png"))
 textInputTexture = pygame.transform.smoothscale(textInputTexture, (2**(7+quality), 2**(7+quality)))
 textInputTexture = pygame.transform.smoothscale(textInputTexture, (256, 64)).convert_alpha()
 
-playerDefaultWalkAnimation = []
-for playerTexture in glob.glob(os.path.join(defaultSkinWalkAnimation, "*.png")):
+walkAnimation = []
+for playerTexture in glob.glob(os.path.join(walkAnimationPath, "*.png")):
 	texture = pygame.image.load(playerTexture).convert_alpha()
 	texture = pygame.transform.smoothscale(texture, (2**(5+quality), 2**(5+quality)))
 	texture = pygame.transform.smoothscale(texture, (64, 64)).convert_alpha()
-	playerDefaultWalkAnimation.append(texture)
+	walkAnimation.append(texture)
 
-playerDefaultBreakAnimation = []
-for playerTexture in glob.glob(os.path.join(defaultSkinBreakAnimation, "*.png")):
+walkGunAnimation = []
+for playerTexture in glob.glob(os.path.join(walkGunAnimationPath, "*.png")):
 	texture = pygame.image.load(playerTexture).convert_alpha()
 	texture = pygame.transform.smoothscale(texture, (2**(5+quality), 2**(5+quality)))
 	texture = pygame.transform.smoothscale(texture, (64, 64)).convert_alpha()
-	playerDefaultBreakAnimation.append(texture)
+	walkGunAnimation.append(texture)
+
+blockBreakAnimation = []
+for playerTexture in glob.glob(os.path.join(breakAnimationPath, "*.png")):
+	texture = pygame.image.load(playerTexture).convert_alpha()
+	texture = pygame.transform.smoothscale(texture, (2**(5+quality), 2**(5+quality)))
+	texture = pygame.transform.smoothscale(texture, (64, 64)).convert_alpha()
+	blockBreakAnimation.append(texture)
+
+breakGunAnimation = []
+for playerTexture in glob.glob(os.path.join(breakGunAnimationPath, "*.png")):
+	texture = pygame.image.load(playerTexture).convert_alpha()
+	texture = pygame.transform.smoothscale(texture, (2**(5+quality), 2**(5+quality)))
+	texture = pygame.transform.smoothscale(texture, (64, 64)).convert_alpha()
+	breakGunAnimation.append(texture)
 
 destroyBlock = []
 for load in range(12):
@@ -223,11 +238,11 @@ def renderText(text, size, color, dest=None, align=None):
 
 class Player(object):
 	def __init__(self, x, y, id):
-		self.defaultNormal = pygame.image.load(os.path.join(defaultSkinPath, "idle.png"))
+		self.defaultNormal = pygame.image.load(os.path.join(playerTexturesPath, "idle.png"))
 		self.defaultNormal = pygame.transform.smoothscale(self.defaultNormal, (2**(5+quality), 2**(5+quality)))
 		self.defaultNormal = pygame.transform.smoothscale(self.defaultNormal, (64, 64)).convert_alpha()
 
-		self.defaultGunHold = pygame.image.load(os.path.join(defaultSkinPath, "gunHold.png"))
+		self.defaultGunHold = pygame.image.load(os.path.join(playerTexturesPath, "gunHold.png"))
 		self.defaultGunHold = pygame.transform.smoothscale(self.defaultGunHold, (2**(5+quality), 2**(5+quality)))
 		self.defaultGunHold = pygame.transform.smoothscale(self.defaultGunHold, (64, 64)).convert_alpha()
 
@@ -326,20 +341,36 @@ class Player(object):
 					self.currentSkinTexture = self.defaultNormal
 		if mousePressed == "left":
 			self.animationTimeIndex += 1
-			if self.animationTimeIndex >= len(playerDefaultBreakAnimation):
+			if self.animationTimeIndex >= len(blockBreakAnimation):
 				self.animationTimeIndex = 0			
 		elif any(value == True for value in pressedKeys.values()):
 			self.animationTimeIndex += 1
-			if self.animationTimeIndex >= len(playerDefaultWalkAnimation):
+			if self.animationTimeIndex >= len(walkAnimation):
 				self.animationTimeIndex = 0
 		else:
 			self.animationTimeIndex = 0
 		self.angle = math.atan2(mouseY-screen.get_rect().centery, mouseX-screen.get_rect().centerx)
 		self.angle = -math.degrees(self.angle)
 		if mousePressed == "left":
-			self.currentSkinTexture = pygame.transform.rotozoom(playerDefaultBreakAnimation[self.animationTimeIndex], self.angle-90, 1)
-		elif any(value == 0 for value in pressedKeys.values()):
-			self.currentSkinTexture = pygame.transform.rotozoom(playerDefaultWalkAnimation[self.animationTimeIndex], self.angle-90, 1)
+			for x in self.inventory:
+				if "slot" in x:
+					if self.selectedSlot == x["slot"]:
+						if x["item"] == GUN:
+							self.currentSkinTexture = pygame.transform.rotozoom(breakGunAnimation[self.animationTimeIndex], self.angle-90, 1)
+						else:
+							self.currentSkinTexture = pygame.transform.rotozoom(blockBreakAnimation[self.animationTimeIndex], self.angle-90, 1)
+					else:
+						self.currentSkinTexture = pygame.transform.rotozoom(blockBreakAnimation[self.animationTimeIndex], self.angle-90, 1)
+		elif any(value == True for value in pressedKeys.values()):
+			for x in self.inventory:
+				if "slot" in x:
+					if self.selectedSlot == x["slot"]:
+						if x["item"] == GUN:
+							self.currentSkinTexture = pygame.transform.rotozoom(walkGunAnimation[self.animationTimeIndex], self.angle-90, 1)
+						else:
+							self.currentSkinTexture = pygame.transform.rotozoom(walkAnimation[self.animationTimeIndex], self.angle-90, 1)
+					else:
+						self.currentSkinTexture = pygame.transform.rotozoom(walkAnimation[self.animationTimeIndex], self.angle-90, 1)
 		else:
 			self.currentSkinTexture = pygame.transform.rotozoom(self.currentSkinTexture, self.angle-90, 1)
 		self.newRect = self.currentSkinTexture.get_rect()
@@ -500,15 +531,19 @@ class TextInput:
 class Item:
 	def __init__(self, item, x, y):
 		self.item = item
-		self.x = x
-		self.y = y
-	def render(self):
+		self.x = random.randint(x+16, x+48)
+		self.y = random.randint(y+16, y+48)
+		self.angle = random.randint(0,360)
 		if self.item == WOODPLANKS:
-			gameSurface.blit(pygame.transform.scale(woodPlanks, (32, 32)), (self.x-16, self.y-16))
-		elif self.item == GUN:
-			gameSurface.blit(pygame.transform.scale(gunItem, (32, 32)), (self.x-16, self.y-16))
+			self.texture = pygame.transform.scale(woodPlanks, (32, 32))
 		elif self.item == WOODLOG:
-			gameSurface.blit(pygame.transform.scale(woodLog, (32, 32)), (self.x-16, self.y-16))
+			self.texture = pygame.transform.scale(woodLog, (32, 32))
+		elif self.item == GUN:
+			self.texture = pygame.transform.scale(gunItem, (32, 32))
+		self.texture = pygame.transform.rotozoom(self.texture, self.angle, 1)
+		self.rect = self.texture.get_rect()
+	def render(self):
+		gameSurface.blit(self.texture, (self.x-8, self.y-8))
 
 
 # gameSurface_Rect.x = 
@@ -1175,6 +1210,9 @@ def singleplayerGame():
 											if playerSlot["item"] == "wood_planks":
 												playerSlot["amount"] += 1
 								elif gameMap[i]["block"] == "tree":
+									for x in range(random.randint(2,4)):
+										itemsList.append(Item(WOODLOG, gameMap[i]["pos"][0]*64, gameMap[i]["pos"][1]*64))
+									print(itemsList)
 									collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
 									gameMap.pop(i)
 									i -= 1
@@ -1209,12 +1247,12 @@ def singleplayerGame():
 			i += 1
 
 		z = 0
-		while z <= len(shotBullets):
+		while z <= len(itemsList):
 			try:
 				itemsList[z].render()
-				if not gameSurface.get_rect().colliderect(itemsList[z].rect):
-					itemsList.remove(itemsList[z])
-					z -= 1
+				# if not gameSurface.get_rect().colliderect(itemsList[z].rect):
+				# 	itemsList.remove(itemsList[z])
+				# 	z -= 1
 			except IndexError:
 				pass
 			z += 1
