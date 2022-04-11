@@ -258,9 +258,9 @@ class Player(object):
 		gameSurface_Rect.y -= self.y
 		self.speed = 3
 		self.inventory = [
-			{"item": "wood_planks", "amount": 64, "slot": 0},
-			{"item": GUN, "amount": 32, "slot": 1},
-			{"item": "wood_planks", "amount": 38, "row": 0, "col": 1}
+			# {"item": WOODPLANKS, "amount": 64, "slot": 0},
+			{"item": GUN, "amount": 32, "slot": 1}
+			# {"item": WOODPLANKS, "amount": 38, "row": 0, "col": 1}
 		]
 		self.selectedSlot = 0
 		self.skills = []
@@ -531,8 +531,8 @@ class TextInput:
 class Item:
 	def __init__(self, item, x, y):
 		self.item = item
-		self.x = random.randint(x+16, x+48)
-		self.y = random.randint(y+16, y+48)
+		self.x = random.randint(x+16, x+48)-8
+		self.y = random.randint(y+16, y+48)-8
 		self.angle = random.randint(0,360)
 		if self.item == WOODPLANKS:
 			self.texture = pygame.transform.scale(woodPlanks, (32, 32))
@@ -541,9 +541,9 @@ class Item:
 		elif self.item == GUN:
 			self.texture = pygame.transform.scale(gunItem, (32, 32))
 		self.texture = pygame.transform.rotozoom(self.texture, self.angle, 1)
-		self.rect = self.texture.get_rect()
+		self.rect = self.texture.get_rect(x=self.x, y=self.y)
 	def render(self):
-		gameSurface.blit(self.texture, (self.x-8, self.y-8))
+		gameSurface.blit(self.texture, (self.x, self.y))
 
 
 # gameSurface_Rect.x = 
@@ -942,7 +942,7 @@ def loadWorldMenu():
 							loadMap(savedWorlds[x])
 							singleplayerGame()
 						if worldChoices[x][7].collidepoint(pygame.mouse.get_pos()):
-							print("Функция ещё не сделана!!!")
+							pass
 					if back.rect.collidepoint(event.pos):
 						singleplayerWorldAction()
 		
@@ -1039,6 +1039,10 @@ def gameSettings():
 	last = pygame.time.get_ticks()
 	global cubeCooldown
 	pygame.display.set_caption("ShootBox - Settings")
+	graphics = Button("Графика", 2, -1)
+	sound = Button("Звуки", 2, 1)
+	language = Button("Язык", 3, -1)
+	back = Button("Назад", 4, 0)
 	while 1:
 		clock.tick(60)
 		screen.fill((28, 21, 53))
@@ -1061,6 +1065,57 @@ def gameSettings():
 			except IndexError:
 				pass
 			i += 1
+		
+		graphics.render()
+		sound.render()
+		language.render()
+		back.render()
+
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				sys.exit()
+			if event.type == MOUSEBUTTONDOWN:
+				if event.button == 1:
+					pass
+
+		guiSurface.blit(cursor, pygame.mouse.get_pos())
+			
+		renderText("FPS: "+str(int(clock.get_fps())), 20, (255, 255, 255), (10,10))
+
+		screen.blit(guiSurface, (0,0))
+
+		pygame.display.update()
+
+def graphicsSettings():
+	last = pygame.time.get_ticks()
+	global cubeCooldown
+	pygame.display.set_caption("ShootBox - Settings")
+	back = Button("Назад")
+	while 1:
+		clock.tick(60)
+		screen.fill((28, 21, 53))
+		guiSurface.fill((28, 21, 53))
+
+		now = pygame.time.get_ticks()
+		if now - last >= cubeCooldown:
+			last = now
+			if len(summonedCubes) < 12:
+				summonedCubes.append(Cube())
+				cubeCooldown = random.randint(350, 600)
+		
+		i = 0
+		while i <= len(summonedCubes):
+			try:
+				summonedCubes[i].render()
+				if summonedCubes[i].rect.y < -128:
+					summonedCubes.remove(summonedCubes[i])
+					i -= 1
+			except IndexError:
+				pass
+			i += 1
+		
+		back.render()
 
 		for event in pygame.event.get():
 			if event.type == QUIT:
@@ -1171,7 +1226,7 @@ def singleplayerGame():
 						if player.selectedSlot == playerSlot["slot"]:
 							if playerSlot["item"] == GUN:
 								pass
-							elif playerSlot["item"] == "wood_planks":
+							elif playerSlot["item"] == WOODPLANKS:
 								if playerSlot["amount"] != 0:
 									if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
 										sameBlock = False
@@ -1183,7 +1238,7 @@ def singleplayerGame():
 										
 										if not sameBlock:
 											collisionRects.append(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
-											gameMap.append({"block": "wood_planks", "pos": [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]})
+											gameMap.append({"block": WOODPLANKS, "pos": [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]})
 											playerSlot["amount"] -= 1
 										if player.rect.colliderect(collisionRects[-1]):
 											collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
@@ -1201,21 +1256,15 @@ def singleplayerGame():
 								if blockDestroyTime < 11:
 									blockDestroyTime += 1
 							if blockDestroyTime >= 11:
-								if gameMap[i]['block'] == "wood_planks":
+								if gameMap[i]['block'] == WOODPLANKS:
+									itemsList.append(Item(WOODPLANKS, gameMap[i]["pos"][0]*64, gameMap[i]["pos"][1]*64))
 									collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
-									gameMap.pop(i)
-									i -= 1
-									for playerSlot in player.inventory:
-										if "slot" in playerSlot:
-											if playerSlot["item"] == "wood_planks":
-												playerSlot["amount"] += 1
 								elif gameMap[i]["block"] == "tree":
 									for x in range(random.randint(2,4)):
 										itemsList.append(Item(WOODLOG, gameMap[i]["pos"][0]*64, gameMap[i]["pos"][1]*64))
-									print(itemsList)
 									collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
-									gameMap.pop(i)
-									i -= 1
+								gameMap.pop(i)
+								i -= 1
 								blockDestroyTime = 0
 					except IndexError:
 						pass
@@ -1250,9 +1299,26 @@ def singleplayerGame():
 		while z <= len(itemsList):
 			try:
 				itemsList[z].render()
-				# if not gameSurface.get_rect().colliderect(itemsList[z].rect):
-				# 	itemsList.remove(itemsList[z])
-				# 	z -= 1
+				if player.rect.colliderect(itemsList[z].rect):
+					breakLoop = True
+					if itemsList[z].item == WOODPLANKS:
+						for item in player.inventory:
+							if item["item"] == WOODPLANKS:
+								item["amount"] += 1
+								breakLoop = False
+								break
+						if breakLoop:
+							player.inventory.append({"item": WOODPLANKS, "amount": 1, "slot": 0})
+					elif itemsList[z].item == WOODLOG:
+						for item in player.inventory:
+							if item["item"] == WOODLOG:
+								item["amount"] += 1
+								breakLoop = False
+								break
+						if breakLoop:
+							player.inventory.append({"item": WOODLOG, "amount": 1, "slot": 0})
+					itemsList.remove(itemsList[z])
+					z -= 1
 			except IndexError:
 				pass
 			z += 1
@@ -1262,7 +1328,7 @@ def singleplayerGame():
 			#Рендер блоков
 			if b["block"] == "tree":
 				gameSurface.blit(tree, (b["pos"][0]*64, b["pos"][1]*64))
-			elif b["block"] == "wood_planks":
+			elif b["block"] == WOODPLANKS:
 				gameSurface.blit(woodPlanks, (b["pos"][0]*64, b["pos"][1]*64))
 			
 			if mousePressed == "left":
@@ -1293,12 +1359,18 @@ def singleplayerGame():
 			guiSurface.blit(hotBar, (guiSurface.get_width()//2-256+h*64, guiSurface.get_height()-64))
 		for x in player.inventory:
 			if x["item"] == GUN:
-				guiSurface.blit(gunItem, (guiSurface.get_width()//2-256+x["slot"]*64, guiSurface.get_height()-64))
-			if x["item"] == "wood_planks":
+				if "slot" in x:
+					guiSurface.blit(gunItem, (guiSurface.get_width()//2-256+x["slot"]*64, guiSurface.get_height()-64))
+					renderText(str(x["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+x["slot"]*64+32, guiSurface.get_height()-64+32))
+			elif x["item"] == WOODPLANKS:
 				if x["amount"] != 0:
 					if "slot" in x:
 						guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+x["slot"]*64+8, guiSurface.get_height()-64+8))
 						renderText(str(x["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+x["slot"]*64+32, guiSurface.get_height()-64+32))
+			elif x["item"] == WOODLOG:
+				if "slot" in x:
+					guiSurface.blit(pygame.transform.smoothscale(woodLog, (48, 48)), ((guiSurface.get_width()//2-256+x["slot"]*64+8, guiSurface.get_height()-64+8)))
+					renderText(str(x["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+x["slot"]*64+32, guiSurface.get_height()-64+32))
 		pygame.draw.rect(guiSurface, (255, 0, 0), (guiSurface.get_width()//2-256+player.selectedSlot*64, guiSurface.get_height()-64, 64, 64), 3)
 
 		if pauseMenu:
@@ -1308,14 +1380,18 @@ def singleplayerGame():
 				if "slot" in inventoryItem:
 					if inventoryItem["item"] == GUN:
 						guiSurface.blit(pygame.transform.smoothscale(gunItem, (206/scalingIndex, 206/scalingIndex)), ((26+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((26+1489)/scalingIndex)))
-					elif inventoryItem["item"] == "wood_planks":
+					elif inventoryItem["item"] == WOODPLANKS:
 						guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (206/scalingIndex, 206/scalingIndex)), ((26+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((26+1489)/scalingIndex)))
+					elif inventoryItem["item"] == WOODLOG:
+						guiSurface.blit(pygame.transform.smoothscale(woodLog, (206/scalingIndex, 206/scalingIndex)), ((26+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((26+1489)/scalingIndex)))
 					renderText(str(inventoryItem["amount"]), int(84/scalingIndex), (255, 255, 255), ((100+145+inventoryItem["slot"]*289)/scalingIndex+inventoryGui_rect.x, inventoryGui_rect.y+((170+1489)/scalingIndex)))
 				if "row" in inventoryItem:
 					if inventoryItem["item"] == GUN:
 						guiSurface.blit(pygame.transform.smoothscale(gunItem, (206/scalingIndex, 206/scalingIndex)), (inventoryGui_rect.x+(745+inventoryItem["row"]*289)/scalingIndex, inventoryGui_rect.y+(233+inventoryItem["col"]*321)))
-					elif inventoryItem["item"] == "wood_planks":
+					elif inventoryItem["item"] == WOODPLANKS:
 						guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (206/scalingIndex, 206/scalingIndex)), (inventoryGui_rect.x+(747+inventoryItem["row"]*289)/scalingIndex, inventoryGui_rect.y+(235+inventoryItem["col"]*321)/scalingIndex))
+					elif inventoryItem["item"] == WOODLOG:
+						guiSurface.blit(pygame.transform.smoothscale(woodLog, (206/scalingIndex, 206/scalingIndex)), (inventoryGui_rect.x+(747+inventoryItem["row"]*289)/scalingIndex, inventoryGui_rect.y+(235+inventoryItem["col"]*321)/scalingIndex))
 					renderText(str(inventoryItem["amount"]), int(84/scalingIndex), (255, 255, 255), (inventoryGui_rect.x+(820+inventoryItem["row"]*289)/scalingIndex, inventoryGui_rect.y+(378+inventoryItem["col"]*321)/scalingIndex))
 				
 
@@ -1366,7 +1442,6 @@ def multiplayerGame(ip, port):
 			gameEvent = pickle.loads(inm.recv(2048))
 			if gameEvent[0] == 'idUpdate':
 				playerid = gameEvent[1]
-				print(playerid)
 			if gameEvent[0] == 'playerPos':
 				gameEvent.pop(0)
 				multiplayerList = []
@@ -1449,7 +1524,7 @@ def multiplayerGame(ip, port):
 					if player.selectedSlot == playerSlot["slot"]:
 						if playerSlot["item"] == GUN:
 							pass
-						elif playerSlot["item"] == "wood_planks":
+						elif playerSlot["item"] == WOODPLANKS:
 							if playerSlot["amount"] != 0:
 								if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
 									sameBlock = False
@@ -1461,7 +1536,7 @@ def multiplayerGame(ip, port):
 										
 									if not sameBlock:
 										collisionRects.append(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
-										gameMap.append({"block": "wood_planks", "pos": [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]})
+										gameMap.append({"block": WOODPLANKS, "pos": [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]})
 										playerSlot["amount"] -= 1
 									if player.rect.colliderect(collisionRects[-1]):
 										collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
@@ -1485,11 +1560,11 @@ def multiplayerGame(ip, port):
 											if blockDestroyTime < 11:
 												blockDestroyTime += 1
 										if blockDestroyTime >= 11:
-											if gameMap[i]['block'] == "wood_planks":
+											if gameMap[i]['block'] == WOODPLANKS:
 												collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64))
 												gameMap.pop(i)
 												i -= 1
-												if slot["item"] == "wood_planks":
+												if slot["item"] == WOODPLANKS:
 													slot["amount"] += 1
 											elif gameMap[i]["block"] == "tree":
 												collisionRects.remove(pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64+24, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64+24, 16, 16))
@@ -1532,7 +1607,7 @@ def multiplayerGame(ip, port):
 			#Рендер блоков
 			if b["block"] == "tree":
 				gameSurface.blit(tree, (b["pos"][0]*64, b["pos"][1]*64))
-			elif b["block"] == "wood_planks":
+			elif b["block"] == WOODPLANKS:
 				gameSurface.blit(woodPlanks, (b["pos"][0]*64, b["pos"][1]*64))
 			
 			if mousePressed == "left":
@@ -1564,7 +1639,7 @@ def multiplayerGame(ip, port):
 		for x in player.inventory:
 			if x["item"] == GUN:
 				guiSurface.blit(gunItem, (guiSurface.get_width()//2-256+x["slot"]*64, guiSurface.get_height()-64))
-			if x["item"] == "wood_planks":
+			if x["item"] == WOODPLANKS:
 				if x["amount"] != 0:
 					guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (48, 48)), (guiSurface.get_width()//2-256+x["slot"]*64+8, guiSurface.get_height()-64+8))
 					renderText(str(x["amount"]), 16, (255, 255, 255), (guiSurface.get_width()//2-256+x["slot"]*64+32, guiSurface.get_height()-64+32))
