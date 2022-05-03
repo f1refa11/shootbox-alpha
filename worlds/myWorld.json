@@ -1,0 +1,11 @@
+{
+    "title": "My World",
+    "size": [32, 32],
+    "map": [
+        {"block": "cobblestone", "pos": [3,3]},
+        {"block": "cobblestone", "pos": [3,4]},
+        {"block": "cobblestone", "pos": [2,3]},
+        {"block": "cobblestone", "pos": [2,4]},
+        {"block": "water", "pos": [4,4]}
+    ]
+}
