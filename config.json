@@ -4,8 +4,8 @@
         576
     ],
     "lang": "ru",
-    "sfxVol": 0,
-    "musicVol": 0,
+    "sfxVol": 100,
+    "musicVol": 100,
     "enableAnimations": true,
     "particles": true,
     "highlightSurface": true,
