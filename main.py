@@ -6,12 +6,13 @@ import pygame
 from pygame.locals import *
 import json
 import random
-import numpy
-import perlin_numpy
+# import numpy
+# import perlin_numpy
 import math
 import threading
 import glob
-import psutil
+# import psutil
+# import gc
 pygame.init()
 
 isLoading = True
@@ -266,8 +267,8 @@ class Player(object):
 		gameSurface_Rect.y -= self.y
 		self.speed = 3
 		self.inventory = [
-			# {"item": WOODPLANKS, "amount": 64, "slot": 0},
-			{"item": GUN, "amount": 32, "slot": 1},
+			{"item": WOODPLANKS, "amount": 64, "slot": 0},
+			# {"item": GUN, "amount": 32, "slot": 1},
 			# {"item": WOODPLANKS, "amount": 38, "row": 0, "col": 1}
 		]
 		self.selectedSlot = 0
@@ -347,15 +348,13 @@ class Player(object):
 	def render(self):
 		mouseX, mouseY = pygame.mouse.get_pos()
 		self.oldCenter = self.rect.center
+		self.currentSkinTexture = self.defaultNormal
+		self.textureChanged = False
 		for x in self.inventory:
 			if "slot" in x:
 				if self.selectedSlot == x["slot"]:
 					if x["item"] == GUN:
 						self.currentSkinTexture = self.defaultGunHold
-					else:
-						self.currentSkinTexture = self.defaultNormal
-				else:
-					self.currentSkinTexture = self.defaultNormal
 		if mousePressed == "left":
 			self.animationTimeIndex += 1
 			if self.animationTimeIndex >= len(blockBreakAnimation):
@@ -369,26 +368,22 @@ class Player(object):
 		self.angle = math.atan2(mouseY-screen.get_rect().centery, mouseX-screen.get_rect().centerx)
 		self.angle = -math.degrees(self.angle)
 		if mousePressed == "left":
+			self.currentSkinTexture = pygame.transform.rotozoom(blockBreakAnimation[self.animationTimeIndex], self.angle-90, 1)
 			for x in self.inventory:
 				if "slot" in x:
 					if self.selectedSlot == x["slot"]:
 						if x["item"] == GUN:
 							self.currentSkinTexture = pygame.transform.rotozoom(breakGunAnimation[self.animationTimeIndex], self.angle-90, 1)
-						else:
-							self.currentSkinTexture = pygame.transform.rotozoom(blockBreakAnimation[self.animationTimeIndex], self.angle-90, 1)
-					else:
-						self.currentSkinTexture = pygame.transform.rotozoom(blockBreakAnimation[self.animationTimeIndex], self.angle-90, 1)
+			self.textureChanged = True
 		elif any(value == True for value in pressedKeys.values()):
+			self.currentSkinTexture = pygame.transform.rotozoom(walkAnimation[self.animationTimeIndex], self.angle-90, 1)
 			for x in self.inventory:
 				if "slot" in x:
 					if self.selectedSlot == x["slot"]:
 						if x["item"] == GUN:
 							self.currentSkinTexture = pygame.transform.rotozoom(walkGunAnimation[self.animationTimeIndex], self.angle-90, 1)
-						else:
-							self.currentSkinTexture = pygame.transform.rotozoom(walkAnimation[self.animationTimeIndex], self.angle-90, 1)
-					else:
-						self.currentSkinTexture = pygame.transform.rotozoom(walkAnimation[self.animationTimeIndex], self.angle-90, 1)
-		else:
+			self.textureChanged = True
+		if not self.textureChanged:
 			self.currentSkinTexture = pygame.transform.rotozoom(self.currentSkinTexture, self.angle-90, 1)
 		self.newRect = self.currentSkinTexture.get_rect()
 		self.newRect.center = self.oldCenter
@@ -666,7 +661,9 @@ class InventoryItem:
 									"col": item.col,
 									"row": item.row
 								})
+							# gc.collect()
 						player.inventory = newInventory
+						# print(player.inventory)
 	def render(self):
 		amountTitle = fonts[int(64//inventoryScaleIndex)].render(str(self.amount), config["enableAntialiasing"]["font"], (255, 255, 255))
 		amountTitle_rect = amountTitle.get_rect(bottomright=(self.rect.bottomright[0],self.rect.bottomright[1]))
@@ -676,6 +673,10 @@ class InventoryItem:
 			guiSurface.blit(pygame.transform.scale(woodPlanks, (160//inventoryScaleIndex, 160//inventoryScaleIndex)), self.rect)
 		elif self.item == WOODLOG:
 			guiSurface.blit(pygame.transform.scale(woodLog, (160//inventoryScaleIndex, 160//inventoryScaleIndex)), self.rect)
+		elif self.item == GUN:
+			guiSurface.blit(pygame.transform.scale(gunItem, (160//inventoryScaleIndex, 160//inventoryScaleIndex)), self.rect)
+		elif self.item == COBBLESTONE:
+			guiSurface.blit(pygame.transform.scale(cobblestone, (160//inventoryScaleIndex, 160//inventoryScaleIndex)), self.rect)
 		guiSurface.blit(amountTitle, amountTitle_rect)
 isLoading = False
 
@@ -1728,7 +1729,7 @@ def singleplayerGame():
 							pygame.mixer.Channel(0).play(guiClick)
 							paused = "settings"
 						elif exit.rect.collidepoint(event.pos):
-							mapData["playerPos"] = [player.x, player.y]
+							mapData["player"]["pos"] = [player.x, player.y]
 							mapData["map"] = gameMap
 							with open(os.path.join(worldsPath, mapData["title"]+".json"), 'w', encoding='utf-8') as f:
 								json.dump(mapData, f, ensure_ascii=False, indent=4)
@@ -2070,6 +2071,8 @@ def singleplayerGame():
 			textureAntialias.render(guiSurface)
 			apply.render()
 			back.render()
+		
+		# print(player.angle)
 
 		# for x in player.inventory:
 		# 	if "slot" in x:
