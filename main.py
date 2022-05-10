@@ -115,6 +115,7 @@ AIR = "air"
 GUN = "gun"
 WATER = "water"
 SAND = "sand"
+COLLECTABLE_ITEMS = [WOODLOG, WOODPLANKS, COBBLESTONE]
 
 generationBlocks = {TREE, AIR, AIR, AIR}
 
@@ -230,6 +231,7 @@ logo = pygame.image.load(os.path.join(guiTexturesPath, "logo.png")).convert_alph
 
 inventoryGui_rect = inventoryGui.get_rect()
 inventoryGui_rect.center = screen.get_rect().center
+
 guiClick = pygame.mixer.Sound(os.path.join(soundsPath, "click.ogg"))
 guiSwitch = pygame.mixer.Sound(os.path.join(soundsPath, "switch.ogg"))
 footstepGrass = pygame.mixer.Sound(os.path.join(soundsPath, "footstepGrass.ogg"))
@@ -734,13 +736,13 @@ def menu():
 			if event.type == MOUSEBUTTONDOWN:
 				if event.button == 1:
 					if play.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						playmodeSelect()
 					if settings.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						gameSettings()
 					if exit.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						pygame.quit()
 						sys.exit()
 			if event.type == VIDEORESIZE:
@@ -807,13 +809,13 @@ def playmodeSelect():
 			if event.type == MOUSEBUTTONDOWN:
 				if event.button == 1:
 					if singleplayer.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						singleplayerWorldAction()
 					if multiplayer.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						multiplayerAction()
 					if back.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						menu()
 			if event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -868,13 +870,13 @@ def singleplayerWorldAction():
 			if event.type == MOUSEBUTTONDOWN:
 				if event.button == 1:
 					if load.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						loadWorldMenu()
 					if create.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						createWorldMenu()
 					if back.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						playmodeSelect()
 			if event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -932,17 +934,17 @@ def multiplayerAction():
 			if event.type == MOUSEBUTTONDOWN:
 				if event.button == 1:
 					if join.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						joinMultiplayerMenu()
 					if create.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						# serverStartThread = threading.Thread(target=startServer)
 						# serverStartThread.setDaemon(True)
 						# serverStartThread.start()
 						# create.text = "Запуск..."
 						pass
 					if back.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						playmodeSelect()
 			if event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -1010,10 +1012,10 @@ def joinMultiplayerMenu():
 				if event.button == 1:
 					mousePressed = True
 					if join.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						pass
 					elif back.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						multiplayerAction()
 			if event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -1125,7 +1127,7 @@ def loadWorldMenu():
 						if worldChoices[x][7].collidepoint(pygame.mouse.get_pos()):
 							pass
 					if back.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						singleplayerWorldAction()
 			if event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -1194,11 +1196,11 @@ def createWorldMenu():
 				if event.button == 1:
 					mousePressed = True
 					if create.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						generateMap()
 						singleplayerGame()
 					elif back.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						singleplayerWorldAction()
 			if event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -1223,6 +1225,8 @@ def loadMap(world):
 	for block in gameMap:
 		if block["block"] == WATER:
 			collisionRects.append([pygame.Rect(block["pos"][0]*64, block["pos"][1]*64, 64, 64), False])
+		elif block["block"] == TREE:
+			collisionRects.append([pygame.Rect(block["pos"][0]*64+24, block["pos"][0]*64+24, 16, 16), True])
 		else:
 			collisionRects.append([pygame.Rect(block["pos"][0]*64, block["pos"][1]*64, 64, 64), True])
 	player = Player(mapData["player"]["pos"][0], mapData["player"]["pos"][1], 0)
@@ -1301,16 +1305,16 @@ def gameSettings():
 			if event.type == MOUSEBUTTONDOWN:
 				if event.button == 1:
 					if graphics.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						graphicsSettings()
 					elif sound.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						soundSettings()
 					elif language.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						languageSettings()
 					elif back.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						menu()
 			if event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -1391,23 +1395,23 @@ def graphicsSettings():
 			if event.type == MOUSEBUTTONDOWN:
 				if event.button == 1:
 					if animation.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(1).play(guiSwitch)
+						pygame.mixer.find_channel().play(guiSwitch)
 						animation.switch()
 						config["enableAnimations"] = not config["enableAnimations"]
 					elif fontAntialiasing.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(1).play(guiSwitch)
+						pygame.mixer.find_channel().play(guiSwitch)
 						fontAntialiasing.switch()
 						config["enableAntialiasing"]["font"] = not config["enableAntialiasing"]["font"]
 					elif guiAntialiasing.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(1).play(guiSwitch)
+						pygame.mixer.find_channel().play(guiSwitch)
 						guiAntialiasing.switch()
 						config["enableAntialiasing"]["gui"] = not config["enableAntialiasing"]["gui"]
 					elif texturesAntialiasing.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(1).play(guiSwitch)
+						pygame.mixer.find_channel().play(guiSwitch)
 						texturesAntialiasing.switch()
 						config["enableAntialiasing"]["other"] = not config["enableAntialiasing"]["other"]
 					elif apply.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						title = fonts[36].render(translate["graphicsSettings"], config["enableAntialiasing"]["font"], (255, 255, 255))
 						animationTitle = fonts[24].render(translate["showAnimations"], config["enableAntialiasing"]["font"], (255, 255, 255))
 						antialiasTitle = fonts[24].render(translate["useAntialiasing"], True, (255, 255, 255))
@@ -1425,7 +1429,7 @@ def graphicsSettings():
 						with open('config.json', 'w', encoding='utf-8') as f:
 							json.dump(config, f, ensure_ascii=False, indent=4)
 					elif back.rect.collidepoint(event.pos):
-						pygame.mixer.Channel(0).play(guiClick)
+						pygame.mixer.find_channel().play(guiClick)
 						gameSettings()
 			if event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -1450,8 +1454,8 @@ def soundSettings():
 	sfxTitle_rect = sfxTitle.get_rect(x=24, y=80)
 	musicTitle = fonts[24].render(translate["music"], config["enableAntialiasing"]["font"], (255, 255, 255))
 	musicTitle_rect = musicTitle.get_rect(x=24, y=sfxTitle_rect.bottomleft[1])
-	sfx = Scrollbar(24, sfxTitle_rect.bottomleft[1], config["sfxVol"])
-	music = Scrollbar(24, musicTitle_rect.bottomleft[1], config["musicVol"])
+	sfx = Scrollbar(24, sfxTitle_rect.bottomleft[1], config["sfx"])
+	music = Scrollbar(24, musicTitle_rect.bottomleft[1], config["music"])
 	back = Button(24, screen.get_height()-72, translate["back"])
 	while 1:
 		clock.tick(60)
@@ -1486,13 +1490,13 @@ def soundSettings():
 			music.eventHandle(event)
 			if event.type == MOUSEBUTTONDOWN:
 				if back.rect.collidepoint(event.pos):
-					pygame.mixer.Channel(0).play(guiClick)
+					pygame.mixer.find_channel().play(guiClick)
 					gameSettings()
 			elif event.type == MOUSEBUTTONUP:
 				print(sfx.value)
 				print(music.value) 
-				config["sfxVol"] = sfx.value
-				config["musicVol"] = music.value
+				config["sfx"] = sfx.value
+				config["music"] = music.value
 				with open('config.json', 'w', encoding='utf-8') as f:
 					json.dump(config, f, ensure_ascii=False, indent=4)
 			if event.type == VIDEORESIZE:
@@ -1579,7 +1583,7 @@ def languageSettings():
 					russian = fonts[24].render("Русский", config["enableAntialiasing"]["font"], (255, 255, 255))
 					config["lang"] = "ru"
 				elif apply.rect.collidepoint(event.pos):
-					pygame.mixer.Channel(0).play(guiClick)
+					pygame.mixer.find_channel().play(guiClick)
 					with open('config.json', 'w', encoding='utf-8') as f:
 						json.dump(config, f, ensure_ascii=False, indent=4)
 					if config["lang"] == "en":
@@ -1593,7 +1597,7 @@ def languageSettings():
 					apply = Button(280, screen.get_height()-72, translate["apply"])
 					back = Button(24, screen.get_height()-72, translate["back"])
 				elif back.rect.collidepoint(event.pos):
-					pygame.mixer.Channel(0).play(guiClick)
+					pygame.mixer.find_channel().play(guiClick)
 					gameSettings()
 			if event.type == VIDEORESIZE:
 				guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -1723,39 +1727,39 @@ def singleplayerGame():
 				if event.button == 1:
 					if paused == "main":
 						if resume.rect.collidepoint(event.pos):
-							pygame.mixer.Channel(0).play(guiClick)
+							pygame.mixer.find_channel().play(guiClick)
 							paused = None
 						elif settings.rect.collidepoint(event.pos):
-							pygame.mixer.Channel(0).play(guiClick)
+							pygame.mixer.find_channel().play(guiClick)
 							paused = "settings"
 						elif exit.rect.collidepoint(event.pos):
 							mapData["player"]["pos"] = [player.x, player.y]
 							mapData["map"] = gameMap
 							with open(os.path.join(worldsPath, mapData["title"]+".json"), 'w', encoding='utf-8') as f:
 								json.dump(mapData, f, ensure_ascii=False, indent=4)
-							pygame.mixer.Channel(0).play(guiClick)
+							pygame.mixer.find_channel().play(guiClick)
 							menu()
 					elif paused == "settings":
 						if showAnimations.rect.collidepoint(event.pos):
-							pygame.mixer.Channel(1).play(guiSwitch)
+							pygame.mixer.find_channel().play(guiSwitch)
 							showAnimations.switch()
 							config["enableAnimations"] = not config["enableAnimations"]
 						elif fontAntialias.rect.collidepoint(event.pos):
-							pygame.mixer.Channel(1).play(guiSwitch)
+							pygame.mixer.find_channel().play(guiSwitch)
 							fontAntialias.switch()
 							config["enableAntialiasing"]["font"] = not config["enableAntialiasing"]["font"]
 						elif guiAntialias.rect.collidepoint(event.pos):
-							pygame.mixer.Channel(1).play(guiSwitch)
+							pygame.mixer.find_channel().play(guiSwitch)
 							guiAntialias.switch()
 							config["enableAntialiasing"]["gui"] = not config["enableAntialiasing"]["gui"]
 						elif textureAntialias.rect.collidepoint(event.pos):
-							pygame.mixer.Channel(1).play(guiSwitch)
+							pygame.mixer.find_channel().play(guiSwitch)
 							textureAntialias.switch()
 							config["enableAntialiasing"]["other"] = not config["enableAntialiasing"]["other"]
 						elif back.rect.collidepoint(event.pos):
 							paused = "main"
 						elif apply.rect.collidepoint(event.pos):
-							pygame.mixer.Channel(0).play(guiClick)
+							pygame.mixer.find_channel().play(guiClick)
 							showAnimationsTitle = fonts[24].render(translate["showAnimations"], config["enableAntialiasing"]["font"], (255, 255, 255))
 							antialiasTitle = fonts[24].render(translate["useAntialiasing"], config["enableAntialiasing"]["font"], (255, 255, 255))
 							fontAntialiasTitle = fonts[24].render(translate["fontAntialias"], config["enableAntialiasing"]["font"], (255, 255, 255))
@@ -1846,6 +1850,24 @@ def singleplayerGame():
 										collisionRects.remove([pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64), True])
 										gameMap.pop(-1)
 										playerSlot["amount"] += 1
+						elif playerSlot["item"] == COBBLESTONE:
+							if playerSlot["amount"] != 0:
+								if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
+									sameBlock = False
+									for block in gameMap:
+										sameBlock = False
+										if block["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
+											sameBlock = True
+											break
+									
+									if not sameBlock:
+										collisionRects.append([pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64), True])
+										gameMap.append({"block": COBBLESTONE, "pos": [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]})
+										playerSlot["amount"] -= 1
+									if player.rect.colliderect(collisionRects[-1][0]):
+										collisionRects.remove([pygame.Rect((pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64*64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64*64, 64, 64), True])
+										gameMap.pop(-1)
+										playerSlot["amount"] += 1
 		elif mousePressed == "left":
 			now2 = pygame.time.get_ticks()
 			if int(math.hypot(screen.get_rect().centerx-pygame.mouse.get_pos()[0], screen.get_rect().centery-pygame.mouse.get_pos()[1])) <= 64*3:
@@ -1894,7 +1916,7 @@ def singleplayerGame():
 			now3 = pygame.time.get_ticks()
 			if now3 - last3 >= 250:
 				last3 = now3
-				pygame.mixer.Channel(2).play(footstepGrass)
+				pygame.mixer.find_channel().play(footstepGrass)
 
 		for x in range(0,gameSurface.get_width(), 64):
 			for y in range(0,gameSurface.get_height(), 64):
@@ -1919,38 +1941,26 @@ def singleplayerGame():
 				itemsList[z].render()
 				if player.rect.colliderect(itemsList[z].rect):
 					breakLoop = True
-					if itemsList[z].item == WOODPLANKS:
+					if any(item == itemsList[z].item for item in COLLECTABLE_ITEMS):
 						for item in player.inventory:
-							if item["item"] == WOODPLANKS:
+							if item["item"] == itemsList[z].item:
 								item["amount"] += 1
 								breakLoop = False
 								break
 						if breakLoop:
 							nextSlot = 0
-							itemExists = False
-							for y in player.inventory:
-								if "slot" in y:
-									nextSlot = max(nextSlot, y["slot"])
-									itemExists = True
-							if itemExists:
-								nextSlot += 1
-								player.inventory.append({"item": WOODPLANKS, "amount": 1, "slot": nextSlot})
-					elif itemsList[z].item == COBBLESTONE:
-						for item in player.inventory:
-							if item["item"] == COBBLESTONE:
-								item["amount"] += 1
-								breakLoop = False
-								break
-						if breakLoop:
-							nextSlot = 0
-							itemExists = False
-							for y in player.inventory:
-								if "slot" in y:
-									nextSlot = max(nextSlot, y["slot"])
-									itemExists = True
-							if itemExists:
-								nextSlot += 1
-								player.inventory.append({"item": COBBLESTONE, "amount": 1, "slot": nextSlot})
+							for i in range(8):
+								slotIsBusy = False
+								for y in player.inventory:
+									if "slot" in y:
+										if y["slot"] == i:
+											slotIsBusy = True
+											break
+								if not slotIsBusy:
+									nextSlot = i
+									break
+							player.inventory.append({"item": itemsList[z].item, "amount": 1, "slot": nextSlot})
+							inventoryItems.append(InventoryItem(itemsList[z].item, 1, slot=nextSlot))
 					itemsList.remove(itemsList[z])
 					z -= 1
 			except IndexError:
@@ -2026,25 +2036,6 @@ def singleplayerGame():
 		if inventoryGuiOpened:
 			guiSurface.blit(inventoryGui, inventoryGui_rect)
 			guiSurface.blit(player.defaultNormal, (200, 200))
-			# for inventoryItem in player.inventory:
-			# 	if "slot" in inventoryItem:
-			# 		if inventoryItem["item"] == GUN:
-			# 			guiSurface.blit(pygame.transform.smoothscale(gunItem, (206/inventoryScaleIndex, 206/inventoryScaleIndex)).convert_alpha(), ((26+145+inventoryItem["slot"]*289)/inventoryScaleIndex+inventoryGui_rect.x, inventoryGui_rect.y+((26+1489)/inventoryScaleIndex)))
-			# 		elif inventoryItem["item"] == WOODPLANKS:
-			# 			guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (206/inventoryScaleIndex, 206/inventoryScaleIndex)).convert_alpha(), ((26+145+inventoryItem["slot"]*289)/inventoryScaleIndex+inventoryGui_rect.x, inventoryGui_rect.y+((26+1489)/inventoryScaleIndex)))
-			# 		elif inventoryItem["item"] == WOODLOG:
-			# 			guiSurface.blit(pygame.transform.smoothscale(woodLog, (206/inventoryScaleIndex, 206/inventoryScaleIndex)).convert_alpha(), ((26+145+inventoryItem["slot"]*289)/inventoryScaleIndex+inventoryGui_rect.x, inventoryGui_rect.y+((26+1489)/inventoryScaleIndex)))
-			# 		text = fonts[int(84/inventoryScaleIndex)].render(str(inventoryItem["amount"]), config["enableAntialiasing"]["font"], (255, 255, 255))
-			# 		guiSurface.blit(text, ((100+145+inventoryItem["slot"]*289)/inventoryScaleIndex+inventoryGui_rect.x, inventoryGui_rect.y+((170+1489)/inventoryScaleIndex)))
-			# 	if "row" in inventoryItem:
-			# 		if inventoryItem["item"] == GUN:
-			# 			guiSurface.blit(pygame.transform.smoothscale(gunItem, (206/inventoryScaleIndex, 206/inventoryScaleIndex)).convert_alpha(), (inventoryGui_rect.x+(745+inventoryItem["row"]*289)/inventoryScaleIndex, inventoryGui_rect.y+(233+inventoryItem["col"]*321)))
-			# 		elif inventoryItem["item"] == WOODPLANKS:
-			# 			guiSurface.blit(pygame.transform.smoothscale(woodPlanks, (206/inventoryScaleIndex, 206/inventoryScaleIndex)).convert_alpha(), (inventoryGui_rect.x+(747+inventoryItem["row"]*289)/inventoryScaleIndex, inventoryGui_rect.y+(235+inventoryItem["col"]*321)/inventoryScaleIndex))
-			# 		elif inventoryItem["item"] == WOODLOG:
-			# 			guiSurface.blit(pygame.transform.smoothscale(woodLog, (206/inventoryScaleIndex, 206/inventoryScaleIndex)).convert_alpha(), (inventoryGui_rect.x+(747+inventoryItem["row"]*289)/inventoryScaleIndex, inventoryGui_rect.y+(235+inventoryItem["col"]*321)/inventoryScaleIndex))
-			# 		text = fonts[int(84/inventoryScaleIndex)].render(str(inventoryItem["amount"]), config["enableAntialiasing"]["font"], (255, 255,255))
-			# 		guiSurface.blit(text, (inventoryGui_rect.x+(820+inventoryItem["row"]*289)/inventoryScaleIndex, inventoryGui_rect.y+(378+inventoryItem["col"]*321)/inventoryScaleIndex))
 			for rect in range(len(inventoryRects)):
 				if rect <= 63:
 					guiSurface.blit(inventoryCell, inventoryRects[rect])
@@ -2080,6 +2071,7 @@ def singleplayerGame():
 		# 			if x["item"] == GUN:
 		# 				guiSurface.blit(gunCursor, (pygame.mouse.get_pos()[0]-32, pygame.mouse.get_pos()[1]-32))
 		# 		else:
+		
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 
 		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
