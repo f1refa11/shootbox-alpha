@@ -1,4 +1,10 @@
 {
+    "windowFlags": {
+        "fullscreen": false,
+        "acceleration": false,
+        "noFrame": false,
+        "scaled": true
+    },
     "resolution": [
         1024,
         576
