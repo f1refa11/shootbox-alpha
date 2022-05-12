@@ -98,7 +98,7 @@ fonts = []
 for x in range(1, 250):
 	fonts.append(pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), x))
 
-version = "0.1.3"
+version = "0.2"
 nickname = "Player"
 pressedKeys = {
 	'right': False,
