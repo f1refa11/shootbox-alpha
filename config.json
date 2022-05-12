@@ -1,9 +1,13 @@
 {
+    "windowFlags": {
+        "fullscreen": false,
+        "acceleration": false
+    },
     "resolution": [
         1024,
         576
     ],
-    "lang": "ru",
+    "lang": "en",
     "sfx": 100,
     "music": 100,
     "enableAnimations": true,
