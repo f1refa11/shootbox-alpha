@@ -29,6 +29,7 @@
     "language": "Язык",
     "graphicsSettings": "Настройки графики",
     "fullscreenTitle": "Полный экран",
+    "accelerationTitle": "Использовать аппаратное ускорение",
     "showAnimations": "Показывать анимации",
     "useAntialiasing": "Использовать сглаживание:",
     "fontAntialias": "Шрифтов",
