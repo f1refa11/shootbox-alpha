@@ -28,6 +28,8 @@
     "sounds": "Звуки",
     "language": "Язык",
     "graphicsSettings": "Настройки графики",
+    "fullscreenTitle": "Полный экран",
+    "accelerationTitle": "Использовать аппаратное ускорение",
     "showAnimations": "Показывать анимации",
     "useAntialiasing": "Использовать сглаживание:",
     "fontAntialias": "Шрифтов",
@@ -38,5 +40,7 @@
     "sfx": "Звуковые эффекты",
     "music": "Музыка",
     "languageSelect": "Настройки языка",
+    "aboutGame": "О игре",
+    "testersTitle": "Тестировщики",
     "continueGame": "Продолжить"
 }

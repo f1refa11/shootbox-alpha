@@ -28,6 +28,8 @@
     "sounds": "Sounds",
     "language": "Language",
     "graphicsSettings": "Graphics settings",
+    "fullscreenTitle": "Fullscreen",
+    "accelerationTitle": "Use GPU acceleration",
     "showAnimations": "Show animations",
     "useAntialiasing": "Enable antialiasing in:",
     "fontAntialias": "Fonts",
@@ -38,5 +40,7 @@
     "sfx": "SFX",
     "music": "Music",
     "languageSelect": "Language settings",
+    "aboutGame": "About",
+    "testersTitle": "Testers",
     "continueGame": "Continue"
 }
