@@ -1,6 +1,6 @@
 {
     "windowFlags": {
-        "fullscreen": true,
+        "fullscreen": false,
         "acceleration": false
     },
     "resolution": [
