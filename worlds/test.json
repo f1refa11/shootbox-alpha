@@ -6,13 +6,13 @@
     ],
     "player": {
         "pos": [
-            205,
-            322
+            683,
+            291
         ],
         "inventory": [
             {
                 "item": "wood_planks",
-                "amount": 24,
+                "amount": 8,
                 "slot": 1
             },
             {
@@ -46,10 +46,647 @@
             ]
         },
         {
-            "block": "tree",
+            "block": "cobblestone",
+            "pos": [
+                8,
+                5
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                8,
+                4
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                9,
+                4
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                9,
+                5
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                9,
+                6
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                8,
+                6
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                8,
+                7
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                9,
+                7
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                8,
+                8
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                9,
+                8
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                9,
+                9
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                8,
+                9
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                8,
+                10
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                9,
+                10
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                11
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                11
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                12
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                12
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                13
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                14
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                13
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                14
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                15
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                16
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                15
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                16
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                17
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                18
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                19
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                17
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                18
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                19
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                20
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                8,
+                21
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                20
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                21
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                9,
+                22
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                6,
+                14
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                6,
+                13
+            ]
+        },
+        {
+            "block": "wood_planks",
             "pos": [
                 5,
+                12
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                4,
+                11
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                4,
+                10
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                4,
+                9
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                4,
+                8
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                4,
+                7
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                4,
+                6
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                3,
                 5
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                3,
+                4
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                3,
+                3
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                4,
+                3
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                5,
+                3
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                6,
+                3
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                7,
+                3
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                11,
+                20
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                12,
+                20
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                13,
+                20
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                13,
+                21
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                12,
+                21
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                12,
+                22
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                11,
+                22
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                11,
+                21
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                13,
+                19
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                12,
+                19
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                11,
+                19
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                12,
+                18
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                11,
+                18
+            ]
+        },
+        {
+            "block": "cobblestone",
+            "pos": [
+                10,
+                18
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                11,
+                17
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                12,
+                16
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                11,
+                16
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                10,
+                16
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                10,
+                17
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                12,
+                15
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                11,
+                15
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                10,
+                15
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                12,
+                14
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                11,
+                14
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                11,
+                13
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                10,
+                14
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                13,
+                14
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                12,
+                13
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                12,
+                12
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                11,
+                12
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                10,
+                13
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                11,
+                11
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                12,
+                11
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                11,
+                10
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                10,
+                12
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                10,
+                11
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                12,
+                10
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                11,
+                9
+            ]
+        },
+        {
+            "block": "wood_planks",
+            "pos": [
+                10,
+                10
             ]
         }
     ]
