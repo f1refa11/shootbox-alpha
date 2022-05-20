@@ -14,6 +14,9 @@
         "gui": true,
         "other": true
     },
+    "showGrass": true,
+    "smartRender": true,
+    "renderDistance": 16,
     "shortcuts": [
         {
             "up": "w",
