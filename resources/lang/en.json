@@ -21,6 +21,7 @@
     "delete": "Delete",
     "noWorlds": "No worlds available",
     "createWorld": "Create world",
+    "createWarning": "Creating world with sizes more than 128x128 can cause memory problems!",
     "worldName": "Name",
     "width": "Width",
     "height": "Height",
