@@ -120,6 +120,8 @@ mousePressed = False
 animationFrame = 0
 inventoryRects = []
 mapData = {}
+blocksOffsetX = 0
+blocksOffsetY = 0
 TREE = "tree"
 WOODLOG = "wood_log"
 WOODPLANKS = "wood_planks"
@@ -147,6 +149,7 @@ def reloadTextures(guiAntialias, textureAntialias):
 	cobblestone = pygame.image.load(os.path.join(blocksTexturesPath, "cobblestone.png"))
 	tree = pygame.image.load(os.path.join(blocksTexturesPath, "tree.png"))
 	sand = pygame.image.load(os.path.join(blocksTexturesPath, "sand.png"))
+	bow = pygame.image.load(os.path.join(itemTexturesPath, "bow.png"))
 	hotBar = pygame.image.load(os.path.join(guiTexturesPath, "hotBar.png"))
 	gunItem = pygame.image.load(os.path.join(itemTexturesPath, "gun.png"))
 	woodLog = pygame.image.load(os.path.join(itemTexturesPath, "woodLog.png"))
@@ -162,8 +165,6 @@ def reloadTextures(guiAntialias, textureAntialias):
 	textInputTexture = pygame.image.load(os.path.join(guiTexturesPath, "input.png"))
 	switchOn = pygame.image.load(os.path.join(guiTexturesPath, "switchOn.png"))
 	switchOff = pygame.image.load(os.path.join(guiTexturesPath, "switchOff.png"))
-	scrollbar_base = pygame.image.load(os.path.join(guiTexturesPath, "scrollbarBase.png"))
-	scrollbar_control = pygame.image.load(os.path.join(guiTexturesPath, "scrollbarControl.png"))
 	pauseMenu_source = pygame.image.load(os.path.join(guiTexturesPath, "pauseMenu.png"))
 	pauseMenuScaleIndex = pauseMenu_source.get_height() / (screen.get_height()-8)
 	discord = pygame.image.load(os.path.join(guiTexturesPath, "discord.png"))
@@ -201,8 +202,6 @@ def reloadTextures(guiAntialias, textureAntialias):
 	textInputTexture = method(textInputTexture, (256, 64)).convert_alpha()
 	switchOn = method(switchOn, (64, 32)).convert_alpha()
 	switchOff = method(switchOff, (64, 32)).convert_alpha()
-	scrollbar_base = method(scrollbar_base, (400, 32))
-	scrollbar_control = method(scrollbar_control, (20, 32))
 	pauseMenu = method(pauseMenu_source, (pauseMenu_source.get_width()/inventoryScaleIndex, screen.get_height()-8)).convert_alpha()
 	discord = method(discord, (71, 55))
 	github = method(github, (64, 64))
@@ -337,7 +336,6 @@ class Player(object):
 
 		return isCollision
 	def moveLeft(self):
-		global cameraX
 		if not self.rect.left < 0:
 			self.rect.x -= self.speed
 			self.x -= self.speed
@@ -347,7 +345,6 @@ class Player(object):
 				self.x += self.speed
 				gameSurface_Rect.x -= self.speed
 	def moveRight(self):
-		global cameraX
 		if not self.rect.right > gameSurface.get_width():
 			self.rect.x += self.speed
 			self.x += self.speed
@@ -357,7 +354,6 @@ class Player(object):
 				self.x -= self.speed
 				gameSurface_Rect.x += self.speed
 	def moveUp(self):
-		global cameraY
 		if not self.rect.top < 0:
 			self.rect.y -= self.speed
 			self.y -= self.speed
@@ -367,7 +363,6 @@ class Player(object):
 				self.y += self.speed
 				gameSurface_Rect.y -= self.speed
 	def moveDown(self):
-		global cameraY
 		if not self.rect.bottom > gameSurface.get_height():
 			self.rect.y += self.speed
 			self.y += self.speed
@@ -581,34 +576,6 @@ class TextInput:
 	def getInput(self):
 		return self.text
 
-class Scrollbar:
-	def __init__(self, x, y, value):
-		self.value = value
-		self.baseRect = scrollbar_base.get_rect(x=x, y=y)
-		self.controlRect = scrollbar_control.get_rect(x=x+(value*4), y=y)
-		self.pressed = False
-	def eventHandle(self, event):
-		if event.type == pygame.MOUSEBUTTONDOWN:
-			if self.controlRect.collidepoint(event.pos):
-				self.pressed = True
-		elif event.type == pygame.MOUSEBUTTONUP:
-			self.pressed = False
-	def render(self):
-		guiSurface.blit(scrollbar_base, self.baseRect)
-		if self.pressed:
-			mouseRel = pygame.mouse.get_rel()
-			if mouseRel[0] < 0 and self.controlRect.centerx - self.baseRect.x + mouseRel[0] >= 10:
-				self.controlRect.x += mouseRel[0]
-			elif mouseRel[0] > 0 and self.baseRect.topright[0] - self.controlRect.centerx >= 10:
-				self.controlRect.x += mouseRel[0]
-			else:
-				if mouseRel[0] < 0:
-					self.controlRect.centerx = self.baseRect.x+10
-				else:
-					self.controlRect.centerx = self.baseRect.topright[0] - 9
-			self.value = math.floor(abs((self.controlRect.centerx - self.baseRect.x)/4))
-		guiSurface.blit(scrollbar_control, self.controlRect)
-
 class Spinbox:
 	def __init__(self, x, y, w, default, max=None):
 		self.x = x
@@ -726,6 +693,7 @@ class InventoryItem:
 		self.craftSlot = False
 		self.amount = amount
 		self.dropped = False
+		self.craftSlotIndex = None
 		self.rect = pygame.Rect(0, 0, 160//inventoryScaleIndex, 160//inventoryScaleIndex)
 		if slot != None:
 			self.rect.x = inventoryRects[64+slot].x
@@ -761,6 +729,7 @@ class InventoryItem:
 								if rectIndex > 71:
 									self.rect.center = inventoryRects[rectIndex].center
 									self.craftSlot = True
+									self.craftSlotIndex = None
 									self.collide = True
 								else:
 									self.rect.center = inventoryRects[rectIndex].center
@@ -1279,7 +1248,11 @@ def createWorldMenu():
 	heightInput = TextInput(24, widthInput.rect.bottomleft[1], "", placeholder=translate["height"])
 	pygame.display.set_caption("ShootBox - "+translate["createWorld"])
 	title = fonts[36].render(translate["createWorld"], config["enableAntialiasing"]["font"], (255, 255, 255))
-	create = Button(24, heightInput.rect.bottomleft[1], translate["create"])
+	warningTitle = fonts[24].render(" ".join(translate["createWarning"].split()[:6]), config["enableAntialiasing"]["font"], (255, 0, 0))
+	warningTitle_rect = warningTitle.get_rect(x=24, y=heightInput.rect.bottomleft[1])
+	warningTitle2 = fonts[24].render(" ".join(translate["createWarning"].split()[6:]), config["enableAntialiasing"]["font"], (255, 0, 0))
+	warningTitle2_rect = warningTitle2.get_rect(x=24, y=warningTitle_rect.bottomleft[1])
+	create = Button(24, warningTitle2_rect.bottomleft[1], translate["create"])
 	back = Button(24, create.rect.bottomleft[1]+16, translate["back"])
 	mousePressed = False
 	while 1:
@@ -1310,6 +1283,8 @@ def createWorldMenu():
 		nameInput.render()
 		widthInput.render()
 		heightInput.render()
+		guiSurface.blit(warningTitle, warningTitle_rect)
+		guiSurface.blit(warningTitle2, warningTitle2_rect)
 
 		create.render()
 		back.render()
@@ -1919,9 +1894,11 @@ def singleplayerGame():
 	pygame.display.set_caption("ShootBox - Playing Singleplayer")
 	pygame.mixer.music.stop()
 	pygame.mixer.music.unload()
-	global screen, guiSurface, gameSurface, gameSurface_Rect, paused, inventoryGuiOpened, blockDestroyTime, inventoryGui, inventoryGui_rect, inventoryScaleIndex, mousePressed, pauseMenu, collisionRects, mapData
+	global screen, guiSurface, gameSurface, gameSurface_Rect, paused, inventoryGuiOpened, blockDestroyTime, inventoryGui, inventoryGui_rect, inventoryScaleIndex, mousePressed, pauseMenu, collisionRects, mapData, blocksOffsetX, blocksOffsetY
 	paused = None
 	inventoryGuiOpened = False
+	blocksOffsetX = 0
+	blocksOffsetY = 0
 	last = pygame.time.get_ticks()
 	last1 = pygame.time.get_ticks()
 	last2 = pygame.time.get_ticks()
@@ -2330,7 +2307,7 @@ def singleplayerGame():
 				elif b["block"] == WATER:
 					gameSurface.blit(water[animationFrame], (b["pos"][0]*64, b["pos"][1]*64))
 				elif b["block"] == SAND:
-					gameSurface.blit(sand, b["pos"][0]*64, b["pos"][1]*64)
+					gameSurface.blit(sand, (b["pos"][0]*64, b["pos"][1]*64))
 
 				if mousePressed == "left":
 					if b["pos"] == [(pygame.mouse.get_pos()[0]-gameSurface_Rect.x)//64, (pygame.mouse.get_pos()[1]-gameSurface_Rect.y)//64]:
