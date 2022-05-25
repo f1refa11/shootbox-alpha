@@ -53,15 +53,19 @@ textRenderer = pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), 36)
 loadingRect_base = pygame.Rect(screen.get_width()//2-200, screen.get_height()-88, 400, 24)
 loadingRect = pygame.Rect(loadingRect_base.x+4, loadingRect_base.y+4, 69, 16)
 
+clock = pygame.time.Clock()
+
 def loadingScreenDisplay():
 	global loadingRect
 	while isLoading:
 		screen.fill((11, 9, 24))
+		clock.tick(30)
 		loadingText = textRenderer.render(loadingState, False, (255, 255, 255))
 		loadingText_rect = loadingText.get_rect()
 		loadingText_rect.center = screen.get_rect().center
 		screen.blit(loadingText, loadingText_rect)
 		pygame.draw.rect(screen, (255, 255, 255), loadingRect_base, 2)
+		loadingRect.w += 2
 		pygame.draw.rect(screen, (255, 255, 255), loadingRect)
 
 		pygame.display.update()
@@ -73,7 +77,6 @@ loadingDisplayThread.start()
 # screen = pygame.display.set_mode((1920, 1080), pygame.RESIZABLE | pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
 
 # screen = pygame.display.set_mode((1024, 576), pygame.RESIZABLE)
-clock = pygame.time.Clock()
 guiSurface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
 guiSurface.convert_alpha()
 
@@ -150,98 +153,36 @@ loadingState = translate["texturesLoading"]
 
 def reloadTextures(guiAntialias, textureAntialias):
 	cursor = pygame.image.load(os.path.join(guiTexturesPath, "cursor.png"))
-	if isLoading:
-		loadingRect.width += 3
 	gunCursor = pygame.image.load(os.path.join(guiTexturesPath, "gunCursor.png"))
-	if isLoading:
-		loadingRect.width += 3
 	grass = pygame.image.load(os.path.join(blocksTexturesPath, "grass.png"))
-	if isLoading:
-		loadingRect.width += 3
 	woodPlanks = pygame.image.load(os.path.join(blocksTexturesPath, "woodPlanks.png"))
-	if isLoading:
-		loadingRect.width += 3
 	cobblestone = pygame.image.load(os.path.join(blocksTexturesPath, "cobblestone.png"))
-	if isLoading:
-		loadingRect.width += 3
 	tree = pygame.image.load(os.path.join(blocksTexturesPath, "tree.png"))
-	if isLoading:
-		loadingRect.width += 3
 	sand = pygame.image.load(os.path.join(blocksTexturesPath, "sand.png"))
-	if isLoading:
-		loadingRect.width += 3
 	bow = pygame.image.load(os.path.join(itemTexturesPath, "bow.png"))
-	if isLoading:
-		loadingRect.width += 3
 	hotBar = pygame.image.load(os.path.join(guiTexturesPath, "hotBar.png"))
-	if isLoading:
-		loadingRect.width += 3
 	gunItem = pygame.image.load(os.path.join(itemTexturesPath, "gun.png"))
-	if isLoading:
-		loadingRect.width += 3
 	woodLog = pygame.image.load(os.path.join(itemTexturesPath, "woodLog.png"))
-	if isLoading:
-		loadingRect.width += 3
 	inventoryGui_source = pygame.image.load(os.path.join(guiTexturesPath, "inventory.png"))
-	if isLoading:
-		loadingRect.width += 3
 	inventoryGui_cell_source = pygame.image.load(os.path.join(guiTexturesPath, "inventoryCell.png"))
-	if isLoading:
-		loadingRect.width += 3
 	inventoryGui_greenCell_source = pygame.image.load(os.path.join(guiTexturesPath, "inventoryCellGreen.png"))
-	if isLoading:
-		loadingRect.width += 3
 	inventoryGui_hotbar_source = pygame.image.load(os.path.join(guiTexturesPath, "inventoryHotbar.png"))
-	if isLoading:
-		loadingRect.width += 3
 	inventoryScaleIndex = inventoryGui_source.get_height() / (screen.get_height()-8)
-	if isLoading:
-		loadingRect.width += 3
 	buttonDefault = pygame.image.load(os.path.join(guiTexturesPath, "buttonDefault.png"))
-	if isLoading:
-		loadingRect.width += 3
 	buttonHovered = pygame.image.load(os.path.join(guiTexturesPath, "buttonHovered.png"))
-	if isLoading:
-		loadingRect.width += 3
 	dropDownDefault = pygame.image.load(os.path.join(guiTexturesPath, "dropDown.png"))
-	if isLoading:
-		loadingRect.width += 3
 	dropDownOpened = pygame.image.load(os.path.join(guiTexturesPath, "dropDownOpened.png"))
-	if isLoading:
-		loadingRect.width += 3
 	textInputTexture = pygame.image.load(os.path.join(guiTexturesPath, "input.png"))
-	if isLoading:
-		loadingRect.width += 3
 	switchOn = pygame.image.load(os.path.join(guiTexturesPath, "switchOn.png"))
-	if isLoading:
-		loadingRect.width += 3
 	switchOff = pygame.image.load(os.path.join(guiTexturesPath, "switchOff.png"))
-	if isLoading:
-		loadingRect.width += 3
 	pauseMenu_source = pygame.image.load(os.path.join(guiTexturesPath, "pauseMenu.png"))
-	if isLoading:
-		loadingRect.width += 3
 	pauseMenuScaleIndex = pauseMenu_source.get_height() / (screen.get_height()-8)
-	if isLoading:
-		loadingRect.width += 3
 	discord = pygame.image.load(os.path.join(guiTexturesPath, "discord.png"))
-	if isLoading:
-		loadingRect.width += 3
 	github = pygame.image.load(os.path.join(guiTexturesPath, "github.png"))
-	if isLoading:
-		loadingRect.width += 3
 	healthBar = pygame.image.load(os.path.join(guiTexturesPath, "healthBar.png"))
-	if isLoading:
-		loadingRect.width += 3
 	health = pygame.image.load(os.path.join(guiTexturesPath, "health.png"))
-	if isLoading:
-		loadingRect.width += 3
 	spinboxUp = pygame.image.load(os.path.join(guiTexturesPath, "spinboxUp.png"))
-	if isLoading:
-		loadingRect.width += 3
-	spinboxDown = pygame.image.load(os.path.join(guiTexturesPath, "spinboxDown.png"))
-	if isLoading:
-		loadingRect.width += 3
+	spinboxDown = pygame.image.load(os.path.join(guiTexturesPath, "spinboxDown.png"))	
 	pauseMenu = None
 	woodPlanks_item = None
 	woodLog_item = None
@@ -257,138 +198,65 @@ def reloadTextures(guiAntialias, textureAntialias):
 	else:
 		method = getattr(pygame.transform, "scale")
 	cursor = method(cursor, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 3
 	gunCursor = method(gunCursor, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 3
 	hotBar = method(hotBar, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 3
 	gunItem = method(gunItem, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	inventoryGui = method(inventoryGui_source, (inventoryGui_source.get_width()/inventoryScaleIndex, screen.get_height()-8)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	inventoryCell = method(inventoryGui_cell_source, (160//inventoryScaleIndex, 160//inventoryScaleIndex))
-	if isLoading:
-		loadingRect.width += 2
 	inventoryCell_green = method(inventoryGui_greenCell_source, (160//inventoryScaleIndex, 160//inventoryScaleIndex))
-	if isLoading:
-		loadingRect.width += 2
 	inventoryHotbar = method(inventoryGui_hotbar_source, (160//inventoryScaleIndex, 160//inventoryScaleIndex))
-	if isLoading:
-		loadingRect.width += 2
 	buttonDefault = method(buttonDefault, (256, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	buttonHovered = method(buttonHovered, (256, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	dropDownDefault = method(dropDownDefault, (256, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	dropDownOpened = method(dropDownOpened, (256, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	textInputTexture = method(textInputTexture, (256, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	switchOn = method(switchOn, (64, 32)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	switchOff = method(switchOff, (64, 32)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	pauseMenu = method(pauseMenu_source, (pauseMenu_source.get_width()/inventoryScaleIndex, screen.get_height()-8)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	discord = method(discord, (71, 55))
-	if isLoading:
-		loadingRect.width += 2
 	github = method(github, (64, 64))
-	if isLoading:
-		loadingRect.width += 2
 	healthBar = method(healthBar, (128, 16))
-	if isLoading:
-		loadingRect.width += 2
 	health = method(health, (128, 16))
-	if isLoading:
-		loadingRect.width += 2
 	spinboxUp = method(spinboxUp, (32, 32))
-	if isLoading:
-		loadingRect.width += 2
 	spinboxDown = method(spinboxDown, (32, 32))
-	if isLoading:
-		loadingRect.width += 2
 	if textureAntialias:
 		method = getattr(pygame.transform, "smoothscale")
 	else:
 		method = getattr(pygame.transform, "scale")
 	grass = method(grass, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	woodPlanks = method(woodPlanks, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	tree = method(tree, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	sand = method(sand, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	woodLog = method(woodLog, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	cobblestone = method(cobblestone, (64, 64)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	woodPlanks_item = method(woodPlanks, (48, 48)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	woodLog_item = method(woodLog, (48, 48)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	cobblestone_item = method(cobblestone, (48, 48)).convert_alpha()
-	if isLoading:
-		loadingRect.width += 2
 	for playerTexture in glob.glob(os.path.join(walkAnimationPath, "*.png")):
 		texture = pygame.image.load(playerTexture).convert_alpha()
 		texture = method(texture, (64, 64))
 		walkAnimation.append(texture)
-	if isLoading:
-		loadingRect.width += 2
 	for playerTexture in glob.glob(os.path.join(walkGunAnimationPath, "*.png")):
 		texture = pygame.image.load(playerTexture).convert_alpha()
 		texture = method(texture, (64, 64))
 		walkGunAnimation.append(texture)
-	if isLoading:
-		loadingRect.width += 2
 	for playerTexture in glob.glob(os.path.join(breakAnimationPath, "*.png")):
 		texture = pygame.image.load(playerTexture).convert_alpha()
 		texture = method(texture, (64, 64))
 		blockBreakAnimation.append(texture)
-	if isLoading:
-		loadingRect.width += 2
 	for playerTexture in glob.glob(os.path.join(breakGunAnimationPath, "*.png")):
 		texture = pygame.image.load(playerTexture).convert_alpha()
 		texture = method(texture, (64, 64))
 		breakGunAnimation.append(texture)
-	if isLoading:
-		loadingRect.width += 2
 	for load in range(12):
 		texture = pygame.image.load(os.path.join(blocksTexturesPath, "blockDestroy_"+str(load)+".png"))
 		texture = method(texture, (64, 64)).convert_alpha()
 		destroyBlock.append(texture)
-	if isLoading:
-		loadingRect.width += 2
 	for load in range(30):
 		texture = pygame.image.load(os.path.join(blocksTexturesPath, "water_"+str(load)+".png"))
 		texture = method(texture, (64, 64)).convert_alpha()
 		water.append(texture)
-	if isLoading:
-		loadingRect.width += 2
+
 	globals().update(locals())
 
 reloadTextures(config["enableAntialiasing"]["gui"], config["enableAntialiasing"]["other"])
