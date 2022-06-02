@@ -697,7 +697,7 @@ class Item:
 		gameSurface.blit(self.texture, (self.x, self.y))
 
 class InventoryItem:
-	def __init__(self, item, amount, slot=None, row=None, col=None):
+	def __init__(self, item, amount, slot=None, row=None, col=None, isCraftResult=False):
 		self.item = item
 		self.slot = slot
 		self.row = row
@@ -705,6 +705,7 @@ class InventoryItem:
 		self.drag = False
 		self.craftSlot = False
 		self.amount = amount
+		self.isCraftResult = isCraftResult
 		self.dropped = False
 		self.craftSlotIndex = None
 		self.rect = pygame.Rect(0, 0, 160//inventoryScaleIndex, 160//inventoryScaleIndex)
@@ -714,6 +715,9 @@ class InventoryItem:
 		elif row != None and col != None:
 			self.rect.x = inventoryRects[col+(8*row)].x
 			self.rect.y = inventoryRects[col+(8*row)].y
+		elif isCraftResult:
+			self.rect.x = inventoryGui_rect.x+416//inventoryScaleIndex
+			self.rect.y = inventoryGui_rect.y+480//inventoryScaleIndex
 		self.previousPos = self.rect.topleft
 	def reload(self):
 		self.rect = pygame.Rect(0, 0, 160//inventoryScaleIndex, 160//inventoryScaleIndex)
@@ -732,23 +736,23 @@ class InventoryItem:
 					self.craftSlot = False
 					for rectIndex in range(len(inventoryRects)):
 						if inventoryRects[rectIndex].collidepoint(event.pos):
+							self.collide = True
+							self.rect.center = inventoryRects[rectIndex].center
 							if rectIndex < 64:
-								self.rect.center = inventoryRects[rectIndex].center
 								self.slot = None
 								self.row = rectIndex//8
 								self.col = rectIndex-self.row*8
-								self.collide = True
 							else:
+								self.row = self.col = None
 								if rectIndex > 71:
-									self.rect.center = inventoryRects[rectIndex].center
 									self.craftSlot = True
-									self.craftSlotIndex = None
-									self.collide = True
+									self.craftSlotIndex = rectIndex-64-8
+									if self.craftSlotIndex >= 0:
+										if self.item == WOODLOG:
+											inventoryItems.append(InventoryItem(WOODPLANKS, self.amount, isCraftResult=True))
 								else:
-									self.rect.center = inventoryRects[rectIndex].center
-									self.row = self.col = None
+									self.craftSlotIndex = None
 									self.slot = rectIndex-64
-									self.collide = True
 							break
 					if not self.collide:
 						self.rect.topleft = self.previousPos
@@ -771,6 +775,19 @@ class InventoryItem:
 										"row": item.row
 									})
 						player.inventory = newInventory
+				else:
+					if self.isCraftResult:
+						for x in range(len(inventoryItems)):
+							if inventoryItems[x].craftSlotIndex != None:
+								if inventoryItems[x].craftSlotIndex >= 0:
+									inventoryItems.pop(x)
+									break
+					else:
+						for x in range(len(inventoryItems)):
+							if inventoryItems[x].isCraftResult:
+								inventoryItems.pop(x)
+								
+
 	def render(self):
 		amountTitle = fonts[int(64//inventoryScaleIndex)].render(str(self.amount), config["enableAntialiasing"]["font"], (255, 255, 255))
 		amountTitle_rect = amountTitle.get_rect(bottomright=(self.rect.bottomright[0],self.rect.bottomright[1]))
@@ -820,7 +837,7 @@ def menu():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -899,7 +916,7 @@ def playmodeSelect():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -962,7 +979,7 @@ def singleplayerWorldAction():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1024,7 +1041,7 @@ def multiplayerAction():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1097,7 +1114,7 @@ def joinMultiplayerMenu():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1195,7 +1212,7 @@ def loadWorldMenu():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1285,7 +1302,7 @@ def createWorldMenu():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1411,7 +1428,7 @@ def gameSettings():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1519,7 +1536,7 @@ def graphicsSettings():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1676,7 +1693,7 @@ def soundSettings():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1757,7 +1774,7 @@ def languageSettings():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1844,7 +1861,7 @@ def about():
 			try:
 				summonedCubes[i].render()
 				if summonedCubes[i].rect.y < -128:
-					summonedCubes.remove(summonedCubes[i])
+					summonedCubes.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -1943,6 +1960,7 @@ def singleplayerGame():
 	apply = Button(24, back.rect.y-64, translate["apply"])
 	animationFrame = 0
 	mousePressed = False
+	inventoryRects.clear()
 	for row in range(9):
 		for col in range(8):
 			inventoryRects.append(pygame.Rect(inventoryGui_rect.x+(896+(176*col))//inventoryScaleIndex, inventoryGui_rect.y+(240+(176*row))//inventoryScaleIndex, 160//inventoryScaleIndex, 160//inventoryScaleIndex))
@@ -2264,7 +2282,7 @@ def singleplayerGame():
 			try:
 				shotBullets[i].render()
 				if not gameSurface.get_rect().colliderect(shotBullets[i].rect):
-					shotBullets.remove(shotBullets[i])
+					shotBullets.pop(i)
 					i -= 1
 			except IndexError:
 				pass
@@ -2303,7 +2321,7 @@ def singleplayerGame():
 									break
 							player.inventory.append({"item": itemsList[z].item, "amount": 1, "slot": nextSlot})
 							inventoryItems.append(InventoryItem(itemsList[z].item, 1, slot=nextSlot))
-					itemsList.remove(itemsList[z])
+					itemsList.pop(z)
 					z -= 1
 			except IndexError:
 				pass
