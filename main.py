@@ -1620,7 +1620,6 @@ def graphicsSettings():
 						pygame.display.quit()
 						pygame.display.init()
 						displayInfo = pygame.display.Info()
-						print(displayInfo)
 						if config["windowFlags"]["fullscreen"]:
 							windowSize = (displayInfo.current_w, displayInfo.current_h)
 						screen = pygame.display.set_mode(windowSize, windowFlags)
