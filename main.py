@@ -1352,7 +1352,7 @@ def loadMap(world):
 	global gameSurface, gameSurface_Rect, player, gameMap
 	global mapData
 	mapData = world
-	gameSurface = pygame.Surface((mapData["size"][0]*64, mapData["size"][1]*64)).convert_alpha()
+	gameSurface = pygame.Surface((mapData["size"][0]*64, mapData["size"][1]*64), pygame.HWSURFACE).convert_alpha()
 	gameSurface_Rect = gameSurface.get_rect()
 	gameSurface_Rect.x, gameSurface_Rect.y = screen.get_rect().center
 	gameMap = mapData["map"]
@@ -1375,7 +1375,7 @@ def generateMap():
 	# 		chunkItem = pygame.Surface((chunkSize*64, chunkSize*64))
 	# 		chunks.append(chunkItem)
 	# 		chunkRects.append(chunkItem.get_rect(x=chunkX, y=chunkY))
-	gameSurface = pygame.Surface((int(widthInput.getInput())*64, int(heightInput.getInput())*64)).convert_alpha()
+	gameSurface = pygame.Surface((int(widthInput.getInput())*64, int(heightInput.getInput())*64), pygame.HWSURFACE).convert_alpha()
 	gameSurface_Rect = gameSurface.get_rect()
 	gameSurface_Rect.x, gameSurface_Rect.y = screen.get_rect().center
 	gameMap.clear()
@@ -2170,6 +2170,9 @@ def singleplayerGame():
 				for row in range(9):
 					for col in range(8):
 						inventoryRects.append(pygame.Rect(inventoryGui_rect.x+(896+(176*col))//inventoryScaleIndex, inventoryGui_rect.y+(240+(176*row))//inventoryScaleIndex, 160//inventoryScaleIndex, 160//inventoryScaleIndex))
+				for craftSlot in range(3):
+					inventoryRects.append(pygame.Rect(inventoryGui_rect.x+(224+(192*craftSlot))//inventoryScaleIndex, inventoryGui_rect.y+(224//inventoryScaleIndex), 160//inventoryScaleIndex, 160//inventoryScaleIndex))
+				inventoryRects.append(pygame.Rect(inventoryGui_rect.x+416//inventoryScaleIndex, inventoryGui_rect.y+480//inventoryScaleIndex, 160//inventoryScaleIndex, 160//inventoryScaleIndex))
 				for item in inventoryItems:
 					item.reload()
 			if inventoryGuiOpened:
@@ -2408,6 +2411,13 @@ def singleplayerGame():
 							guiSurface.blit(inventoryCell, inventoryRects[rect])
 			for x in inventoryItems:
 				x.render()
+			for rect in inventoryRects:
+				if rect.collidepoint(pygame.mouse.get_pos()):
+					itemSlotHover = pygame.Surface((160//inventoryScaleIndex, 160//inventoryScaleIndex))
+					itemSlotHover.set_alpha(85)
+					itemSlotHover.convert_alpha()
+					itemSlotHover.fill((255, 255, 255))
+					guiSurface.blit(itemSlotHover, rect)
 		
 		if paused == "main":
 			guiSurface.blit(pauseMenu, (4,4))
