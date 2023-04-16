@@ -12,6 +12,7 @@ import math
 import threading
 import glob
 import webbrowser
+import socket
 # import psutil
 pygame.init()
 
@@ -106,7 +107,7 @@ fonts = []
 for x in range(1, 250):
 	fonts.append(pygame.font.Font(os.path.join(resourcesPath, "font.ttf"), x))
 
-version = "0.2"
+version = "0.3.2"
 nickname = "Player"
 pressedKeys = {
 	"right": False,
@@ -139,6 +140,11 @@ GUN = "gun"
 WATER = "water"
 SAND = "sand"
 COLLECTABLE_ITEMS = [WOODLOG, WOODPLANKS, COBBLESTONE]
+gameTime = 0
+playerList = []
+targetFPS = 60
+fps = targetFPS
+unlimitedFPS = False
 
 generationBlocks = {TREE, AIR, AIR, AIR}
 
@@ -288,8 +294,13 @@ for world in glob.glob(os.path.join(worldsPath, "*.json")):
 
 loadingRect.width = 392
 
+def normal_round(n):
+    if n - math.floor(n) < 0.5:
+        return math.floor(n)
+    return math.ceil(n)
+
 class Player(object):
-	def __init__(self, x, y, id):
+	def __init__(self, x, y, id, isFocused):
 		self.defaultNormal = pygame.image.load(os.path.join(playerTexturesPath, "idle.png"))
 		self.defaultGunHold = pygame.image.load(os.path.join(playerTexturesPath, "gunHold.png"))
 		if config["enableAntialiasing"]["other"]:
@@ -306,8 +317,10 @@ class Player(object):
 		self.id = id
 		self.rect = pygame.Rect(self.x+28, self.y+28, 36, 36)
 		self.rect.center = self.x, self.y
-		gameSurface_Rect.x -= self.x     
-		gameSurface_Rect.y -= self.y
+		self.isFocused = isFocused
+		if self.isFocused:
+			gameSurface_Rect.x -= self.x     
+			gameSurface_Rect.y -= self.y
 		self.speed = 3
 		self.inventory = [
 			{"item": WOODPLANKS, "amount": 64, "slot": 0},
@@ -318,7 +331,10 @@ class Player(object):
 		self.skills = []
 		self.initHp = 100
 		self.hp = 100
-		self.nicknameDisplay = fonts[24].render(nickname, config["enableAntialiasing"]["font"], (255, 255, 255))
+		if self.isFocused:
+			self.nicknameDisplay = fonts[24].render(nickname, config["enableAntialiasing"]["font"], (255, 255, 255))
+		else:
+			self.nicknameDisplay = fonts[24].render("Bot", config["enableAntialiasing"]["font"], (255, 255, 255))
 		self.nicknameDisplay_rect = self.nicknameDisplay.get_rect()
 		self.nicknameDisplay_rect.centerx = self.rect.centerx
 		self.nicknameDisplay_rect.y = self.rect.y-32
@@ -326,6 +342,10 @@ class Player(object):
 		self.relX = None
 		self.relY = None
 		self.animationTimeIndex = 0
+		self.xRect2 = 0
+		self.yRect2 = 0
+		self.gsRectX = 0
+		self.gsRecty = 0
 	def checkForCollision(self):
 		isCollision = False
 
@@ -349,41 +369,65 @@ class Player(object):
 
 		return isCollision
 	def moveLeft(self):
-		if not self.rect.left < 0:
-			self.rect.x -= self.speed
-			self.x -= self.speed
-			gameSurface_Rect.x += self.speed
-			if self.checkForCollision():
-				self.rect.x += self.speed
-				self.x += self.speed
-				gameSurface_Rect.x -= self.speed
+		if self.isFocused:
+			if not self.rect.left < 0:
+				xFloat = self.speed * (60/fps)
+
+				self.xRect2 = self.rect.x - xFloat
+				self.x -= xFloat
+				self.gsRectX = gameSurface_Rect.x + xFloat
+
+				self.rect.x = normal_round(self.xRect2)
+				gameSurface_Rect.x = normal_round(self.gsRectX)
+				if self.checkForCollision():
+					self.rect.x += self.speed * (60/fps)
+					self.x += self.speed * (60/fps)
+					gameSurface_Rect.x -= self.speed * (60/fps)
 	def moveRight(self):
-		if not self.rect.right > gameSurface.get_width():
-			self.rect.x += self.speed
-			self.x += self.speed
-			gameSurface_Rect.x -= self.speed
-			if self.checkForCollision():
-				self.rect.x -= self.speed
-				self.x -= self.speed
-				gameSurface_Rect.x += self.speed
+		if self.isFocused:
+			if not self.rect.right > gameSurface.get_width():
+				xFloat = self.speed * (60/fps)
+
+				self.xRect2 = self.rect.x + xFloat
+				self.x = self.x + xFloat
+				self.gsRectX = gameSurface_Rect.x - xFloat
+
+				self.rect.x = normal_round(self.xRect2)
+				gameSurface_Rect.x = normal_round(self.gsRectX)
+				if self.checkForCollision():
+					self.rect.x -= self.speed * (60/fps)
+					self.x -= self.speed * (60/fps)
+					gameSurface_Rect.x += self.speed * (60/fps)
 	def moveUp(self):
-		if not self.rect.top < 0:
-			self.rect.y -= self.speed
-			self.y -= self.speed
-			gameSurface_Rect.y += self.speed
-			if self.checkForCollision():
-				self.rect.y += self.speed
-				self.y += self.speed
-				gameSurface_Rect.y -= self.speed
+		if self.isFocused:
+			if not self.rect.top < 0:
+				xFloat = self.speed * (60/fps)
+
+				self.yRect2 = self.rect.y - xFloat
+				self.y -= self.speed * (60/fps)
+				self.gsRectY = gameSurface_Rect.y + xFloat
+
+				self.rect.y = normal_round(self.yRect2)
+				gameSurface_Rect.y = normal_round(self.gsRectY)
+				if self.checkForCollision():
+					self.rect.y += self.speed * (60/fps)
+					self.y += self.speed * (60/fps)
+					gameSurface_Rect.y -= self.speed * (60/fps)
 	def moveDown(self):
-		if not self.rect.bottom > gameSurface.get_height():
-			self.rect.y += self.speed
-			self.y += self.speed
-			gameSurface_Rect.y -= self.speed
-			if self.checkForCollision():
-				self.rect.y -= self.speed
-				self.y -= self.speed
-				gameSurface_Rect.y += self.speed
+		if self.isFocused:
+			if not self.rect.bottom > gameSurface.get_height():
+				xFloat = self.speed * (60/fps)
+
+				self.yRect2 = self.rect.y + xFloat
+				self.y += self.speed * (60/fps)
+				self.gsRectY = gameSurface_Rect.y - xFloat
+
+				self.rect.y = normal_round(self.yRect2)
+				gameSurface_Rect.y = normal_round(self.gsRectY)
+				if self.checkForCollision():
+					self.rect.y -= self.speed * (60/fps)
+					self.y -= self.speed * (60/fps)
+					gameSurface_Rect.y += self.speed * (60/fps)
 	def render(self):
 		mouseX, mouseY = pygame.mouse.get_pos()
 		self.oldCenter = self.rect.center
@@ -395,11 +439,11 @@ class Player(object):
 					if x["item"] == GUN:
 						self.currentSkinTexture = self.defaultGunHold
 		if mousePressed == "left":
-			self.animationTimeIndex += 1
+			self.animationTimeIndex += 1 * (60/fps)
 			if self.animationTimeIndex >= len(blockBreakAnimation):
 				self.animationTimeIndex = 0
 		elif any(value == True for value in pressedKeys.values()):
-			self.animationTimeIndex += 1
+			self.animationTimeIndex += 1 * (60/fps)
 			if self.animationTimeIndex >= len(walkAnimation):
 				self.animationTimeIndex = 0
 		else:
@@ -415,7 +459,10 @@ class Player(object):
 							self.currentSkinTexture = pygame.transform.rotozoom(breakGunAnimation[self.animationTimeIndex], self.angle-90, 1)
 			self.textureChanged = True
 		elif any(value == True for value in pressedKeys.values()):
-			self.currentSkinTexture = pygame.transform.rotozoom(walkAnimation[self.animationTimeIndex], self.angle-90, 1)
+			try:
+				self.currentSkinTexture = pygame.transform.rotozoom(walkAnimation[int(self.animationTimeIndex)], self.angle-90, 1)
+			except:
+				print(self.animationTimeIndex)
 			for x in self.inventory:
 				if "slot" in x:
 					if self.selectedSlot == x["slot"]:
@@ -483,10 +530,10 @@ class Cube:
 			self.angle = 0
 		else:
 			if self.rotateMode == 0:
-				self.angle += self.rotateSpeed
+				self.angle += self.rotateSpeed * (60/fps)
 			else:
-				self.angle -= self.rotateSpeed
-		self.rect.y -= self.speed
+				self.angle -= self.rotateSpeed * (60/fps)
+		self.rect.y -= self.speed * (60/fps)
 
 class Button:
 	def __init__(self, x, y, text):
@@ -677,6 +724,30 @@ class Spinbox:
 		if self.valueEnter:
 			pygame.draw.rect(screen, (255, 255, 255), self.valueTextLine)
 
+class MultiSelect:
+	def __init__(self, x, y, values, default, orientation="horizontal"):
+		self.values = list(values)
+		self.valueTextures = []
+		self.orientation = orientation
+		self.default = default
+		for index, text in enumerate(self.values):
+			if index == self.default:
+				useColor = (255, 255, 255)
+			else:
+				useColor = (180, 180, 180)
+			render = fonts[24].render(text, config["enableAntialiasing"]["font"], useColor)
+			if self.orientation == "horizontal":
+				renderRect = render.get_rect(x=x+index*render.width+10, y=y)
+			else:
+				renderRect = render.get_rect(x=x, y=y+index*render.height+10)
+			self.valueTextures.append([
+				render,
+				renderRect
+			])
+	def render(self, screen):
+		for texture in self.valueTextures:
+			screen.blit(texture[0], texture[1])
+
 class Item:
 	def __init__(self, item, x, y):
 		self.item = item
@@ -804,9 +875,48 @@ class InventoryItem:
 		guiSurface.blit(amountTitle, amountTitle_rect)
 isLoading = False
 
+def joinServer(ip, port):
+	global clientSock
+	clientSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	clientSock.connect((ip, port))
+
+def coolSendingStuff(player):
+	data = clientSock.recv(1024)
+	print(str(data))
+	while 1:
+		clientSock.send(bytes(json.dumps({"playerx": player.x, "playery": player.y}), encoding = 'UTF-8'))
+		# data = clientSock.recv(1024)
+
+def coolAcceptingStuff():
+	while 1:
+		data = clientSock.recv(1024)
+		print(str(data))
+
+def leaveServer():
+	clientSock.close()
+
+# def createServer(port, maxPlayers=99):
+# 	global serv
+# 	serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# 	serv.bind(('', port))
+# 	serv.listen(maxPlayers)
+
+# def listenClients():
+# 	while 1:
+# 		conn, addr = serv.accept()  # начинаем принимать соединения
+# 		print('connected:', addr)  # выводим информацию о подключении
+# 		conn.send(bytes(json.dumps({"size": [512, 512], "yourPos": [64, 64]}), encoding = 'UTF-8'))
+# 		data = conn.recv(1024)  # принимаем данные от клиента, по 1024 байт
+# 		print(str(data))
+# 		# conn.send(data.upper())
+
+# def destroyServer():
+# 	serv.close()
+
+
 def menu():
 	last = pygame.time.get_ticks()
-	global cubeCooldown, guiSurface
+	global cubeCooldown, guiSurface, fps, unlimitedFPS
 
 	pygame.display.set_caption("ShootBox - "+translate["mainMenu"])
 
@@ -820,7 +930,12 @@ def menu():
 
 	logo.set_alpha(0)
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			clock.tick(9999)
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -900,7 +1015,11 @@ def playmodeSelect():
 	modeSelectTitle = fonts[36].render(translate["modeSelect"], config["enableAntialiasing"]["font"], (255, 255, 255))
 
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -948,7 +1067,7 @@ def playmodeSelect():
 				guiSurface.convert_alpha()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -963,7 +1082,11 @@ def singleplayerWorldAction():
 	create = Button(24, load.rect.bottomleft[1], translate["create"])
 	back = Button(24, create.rect.bottomleft[1], translate["back"])
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1009,7 +1132,7 @@ def singleplayerWorldAction():
 				guiSurface.convert_alpha()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -1025,7 +1148,11 @@ def multiplayerAction():
 	create = Button(24, join.rect.bottomleft[1], translate["createRoom"])
 	back = Button(24, create.rect.bottomleft[1], translate["back"])
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1077,28 +1204,29 @@ def multiplayerAction():
 				guiSurface.convert_alpha()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
 
 		pygame.display.update()
 
-def startServer():
-	# os.system('python "'+os.path.join(serverPath, "server.py")+'"')
-	pass
-
 def joinMultiplayerMenu():
 	last = pygame.time.get_ticks()
 	global cubeCooldown, guiSurface
 	title = fonts[36].render(translate["joinServer"], config["enableAntialiasing"]["font"], (255, 255, 255))
-	ipInput = TextInput(24, 80, "", placeholder="IP")
-	portInput = TextInput(24, ipInput.rect.bottomleft[1], "26675", placeholder=translate["port"])
+	ipInput = TextInput(24, 80, "192.168.1.72", placeholder="IP")
+	portInput = TextInput(24, ipInput.rect.bottomleft[1], "1234", placeholder=translate["port"])
 	join = Button(24, portInput.rect.bottomleft[1], translate["joinServer"])
-	back = Button(24, join.rect.bottomleft[1], translate["back"])
+	leave = Button(24, join.rect.bottomleft[1], "leave")
+	back = Button(24, leave.rect.bottomleft[1], translate["back"])
 	mousePressed = False
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1123,6 +1251,7 @@ def joinMultiplayerMenu():
 		guiSurface.blit(title, (24, 24))
 
 		join.render()
+		leave.render()
 		back.render()
 
 		ipInput.render()
@@ -1139,7 +1268,14 @@ def joinMultiplayerMenu():
 					mousePressed = True
 					if join.rect.collidepoint(event.pos):
 						pygame.mixer.find_channel().play(guiClick)
-						pass
+						joinServer(ipInput.getInput(), int(portInput.getInput()))
+						g = threading.Thread(target=coolSendingStuff, args=(Player(64, 64, 23, False),))
+						h = threading.Thread(target=coolAcceptingStuff)
+						g.start()
+						h.start()
+					if leave.rect.collidepoint(event.pos):
+						pygame.mixer.find_channel().play(guiClick)
+						leaveServer()
 					elif back.rect.collidepoint(event.pos):
 						pygame.mixer.find_channel().play(guiClick)
 						multiplayerAction()
@@ -1148,7 +1284,7 @@ def joinMultiplayerMenu():
 				guiSurface.convert_alpha()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -1195,7 +1331,11 @@ def loadWorldMenu():
 	notFound = fonts[24].render(translate["noWorlds"], config["enableAntialiasing"]["font"], (255, 255, 255))
 	back = Button(24, 160, translate["back"])
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1263,7 +1403,7 @@ def loadWorldMenu():
 		
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -1286,7 +1426,11 @@ def createWorldMenu():
 	back = Button(24, create.rect.bottomleft[1]+16, translate["back"])
 	mousePressed = False
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1341,7 +1485,7 @@ def createWorldMenu():
 				guiSurface.convert_alpha()
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -1352,7 +1496,7 @@ def loadMap(world):
 	global gameSurface, gameSurface_Rect, player, gameMap
 	global mapData
 	mapData = world
-	gameSurface = pygame.Surface((mapData["size"][0]*64, mapData["size"][1]*64)).convert_alpha()
+	gameSurface = pygame.Surface((mapData["size"][0]*64, mapData["size"][1]*64), pygame.HWSURFACE).convert_alpha()
 	gameSurface_Rect = gameSurface.get_rect()
 	gameSurface_Rect.x, gameSurface_Rect.y = screen.get_rect().center
 	gameMap = mapData["map"]
@@ -1367,7 +1511,7 @@ def loadMap(world):
 	player.inventory = mapData["player"]["inventory"]
 
 def generateMap():
-	global gameSurface, gameSurface_Rect, player, mapData
+	global gameSurface, gameSurface_Rect, player, mapData, playerList
 	# chunks = []
 	# chunkRects = []
 	# for chunkX in range(0, int(widthInput.getInput()), chunkSize*64):
@@ -1375,21 +1519,20 @@ def generateMap():
 	# 		chunkItem = pygame.Surface((chunkSize*64, chunkSize*64))
 	# 		chunks.append(chunkItem)
 	# 		chunkRects.append(chunkItem.get_rect(x=chunkX, y=chunkY))
-	gameSurface = pygame.Surface((int(widthInput.getInput())*64, int(heightInput.getInput())*64)).convert_alpha()
+	gameSurface = pygame.Surface((int(widthInput.getInput())*64, int(heightInput.getInput())*64), pygame.HWSURFACE).convert_alpha()
 	gameSurface_Rect = gameSurface.get_rect()
 	gameSurface_Rect.x, gameSurface_Rect.y = screen.get_rect().center
 	gameMap.clear()
-	for x in range(int(widthInput.text)):
-		for y in range(int(heightInput.text)):
-			chosenBlock = random.choice(list(generationBlocks))
-			if chosenBlock != AIR:
-				gameMap.append({"block": chosenBlock, "pos": [x, y]})
-				if chosenBlock == TREE:
-					collisionRects.append([pygame.Rect(x*64+24, y*64+24, 16, 16), True])
-				else:
-					collisionRects.append([pygame.Rect(x*64, y*64, 64, 64), True])
-	# player = Player(64, 64, 0)
-	player = Player(random.randint(0, gameSurface.get_width()), random.randint(0, gameSurface.get_height()), 0)
+	# for x in range(int(widthInput.text)):
+	# 	for y in range(int(heightInput.text)):
+	# 		chosenBlock = random.choice(list(generationBlocks))
+	# 		if chosenBlock != AIR:
+	# 			gameMap.append({"block": chosenBlock, "pos": [x, y]})
+	# 			if chosenBlock == TREE:
+	# 				collisionRects.append([pygame.Rect(x*64+24, y*64+24, 16, 16), True])
+	# 			else:
+	# 				collisionRects.append([pygame.Rect(x*64, y*64, 64, 64), True])
+	player = Player(random.randint(0, gameSurface.get_width()), random.randint(0, gameSurface.get_height()), 0, True)
 	mapData = {
 		"title": nameInput.text,
 		"size": [int(widthInput.text), int(heightInput.text)],
@@ -1412,7 +1555,11 @@ def gameSettings():
 	language = Button(24, sound.rect.bottomleft[1], translate["language"])
 	back = Button(24, language.rect.bottomleft[1]+16, translate["back"])
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1465,7 +1612,7 @@ def gameSettings():
 
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -1520,7 +1667,11 @@ def graphicsSettings():
 	back = Button(24, screen.get_height()-72, translate["back"])
 	apply = Button(back.rect.bottomright[0], screen.get_height()-72, translate["apply"])
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1656,7 +1807,7 @@ def graphicsSettings():
 
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -1676,7 +1827,11 @@ def soundSettings():
 	music = Spinbox(musicTitle_rect.topright[0], musicTitle_rect.topright[1], 128, config["music"], 100)
 	back = Button(24, screen.get_height()-72, translate["back"])
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1731,7 +1886,7 @@ def soundSettings():
 		pygame.mixer.music.set_volume(config['music']/100)
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -1757,7 +1912,11 @@ def languageSettings():
 	back = Button(24, screen.get_height()-72, translate["back"])
 	apply = Button(back.rect.bottomright[0], screen.get_height()-72, translate["apply"])
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1823,7 +1982,7 @@ def languageSettings():
 
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -1844,7 +2003,11 @@ def about():
 	discord.set_alpha(155)
 	github.set_alpha(155)
 	while 1:
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((28, 21, 53))
 		guiSurface.fill((28, 21, 53))
 
@@ -1911,7 +2074,7 @@ def about():
 
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 			
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 
 		screen.blit(guiSurface, (0,0))
@@ -1923,7 +2086,7 @@ def singleplayerGame():
 	pygame.display.set_caption("ShootBox - Playing Singleplayer")
 	pygame.mixer.music.stop()
 	pygame.mixer.music.unload()
-	global screen, guiSurface, gameSurface, gameSurface_Rect, paused, inventoryGuiOpened, blockDestroyTime, inventoryGui, inventoryGui_rect, inventoryScaleIndex, mousePressed, pauseMenu, collisionRects, mapData, blocksOffsetX, blocksOffsetY
+	global gameTime, screen, guiSurface, gameSurface, gameSurface_Rect, paused, inventoryGuiOpened, blockDestroyTime, inventoryGui, inventoryGui_rect, inventoryScaleIndex, mousePressed, pauseMenu, collisionRects, mapData, blocksOffsetX, blocksOffsetY
 	paused = None
 	inventoryGuiOpened = False
 	blocksOffsetX = 0
@@ -1976,13 +2139,36 @@ def singleplayerGame():
 		renderRect = pygame.Rect(player.rect.centerx-screen.get_width()//2, player.rect.centery-screen.get_height()//2, screen.get_width(), screen.get_height())
 	else:
 		renderRect = pygame.Rect(player.rect.centerx-config["renderDistance"]*32, player.rect.centery-config["renderDistance"]*32, config["renderDistance"]*64, config["renderDistance"]*64)
+	nightOverlay = screen.copy().convert_alpha()
+	nightOverlay.set_alpha(gameTime/5)
+	timeDirection = 0
+	gameTime = 0
 	while 1:
 		sameBlock = False
-		clock.tick(60)
+		if unlimitedFPS:
+			fps = math.ceil(clock.get_fps())
+		else:
+			fps = targetFPS
+			clock.tick(fps)
 		screen.fill((42, 170, 255))
 		gameSurface.fill((29, 189, 104))
+		nightOverlay.fill((0, 0, 0))
 		guiSurface.fill((0,0,0,0))
-		
+
+		if timeDirection == 0:
+			if gameTime < 4000:
+				gameTime += 1
+				if gameTime > 1000 and gameTime < 3000 and gameTime%10 == 0:
+					nightOverlay.set_alpha(nightOverlay.get_alpha()+1)
+			else:
+				timeDirection = 1
+		else:
+			if gameTime > 0:
+				gameTime -= 1
+				if gameTime > 1000 and gameTime < 3000 and gameTime%10 == 0:
+					nightOverlay.set_alpha(nightOverlay.get_alpha()-1)
+			else:
+				timeDirection = 0
 		
 		oldScreen = [screen.get_width(), screen.get_height()]
 
@@ -2170,6 +2356,9 @@ def singleplayerGame():
 				for row in range(9):
 					for col in range(8):
 						inventoryRects.append(pygame.Rect(inventoryGui_rect.x+(896+(176*col))//inventoryScaleIndex, inventoryGui_rect.y+(240+(176*row))//inventoryScaleIndex, 160//inventoryScaleIndex, 160//inventoryScaleIndex))
+				for craftSlot in range(3):
+					inventoryRects.append(pygame.Rect(inventoryGui_rect.x+(224+(192*craftSlot))//inventoryScaleIndex, inventoryGui_rect.y+(224//inventoryScaleIndex), 160//inventoryScaleIndex, 160//inventoryScaleIndex))
+				inventoryRects.append(pygame.Rect(inventoryGui_rect.x+416//inventoryScaleIndex, inventoryGui_rect.y+480//inventoryScaleIndex, 160//inventoryScaleIndex, 160//inventoryScaleIndex))
 				for item in inventoryItems:
 					item.reload()
 			if inventoryGuiOpened:
@@ -2408,6 +2597,13 @@ def singleplayerGame():
 							guiSurface.blit(inventoryCell, inventoryRects[rect])
 			for x in inventoryItems:
 				x.render()
+			for rect in inventoryRects:
+				if rect.collidepoint(pygame.mouse.get_pos()):
+					itemSlotHover = pygame.Surface((160//inventoryScaleIndex, 160//inventoryScaleIndex))
+					itemSlotHover.set_alpha(85)
+					itemSlotHover.convert_alpha()
+					itemSlotHover.fill((255, 255, 255))
+					guiSurface.blit(itemSlotHover, rect)
 		
 		if paused == "main":
 			guiSurface.blit(pauseMenu, (4,4))
@@ -2441,7 +2637,7 @@ def singleplayerGame():
 		
 		guiSurface.blit(cursor, pygame.mouse.get_pos())
 
-		fpsCount = fonts[20].render("FPS: "+str(int(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
+		fpsCount = fonts[20].render("FPS: "+str(math.ceil(clock.get_fps())), config["enableAntialiasing"]["font"], (255, 255, 255))
 		guiSurface.blit(fpsCount, (10, 10))
 		if config["smartRender"]:
 			renderRect = pygame.Rect(player.newRect.centerx-screen.get_width()//2, player.newRect.centery-screen.get_height()//2, screen.get_width(), screen.get_height())
@@ -2449,7 +2645,8 @@ def singleplayerGame():
 			renderRect = pygame.Rect(player.newRect.centerx-config["renderDistance"]*32, player.newRect.centery-config["renderDistance"]*32, config["renderDistance"]*64, config["renderDistance"]*64)
 		# pygame.draw.rect(gameSurface, (255, 0, 0), renderRect, 3)
 		screen.blit(gameSurface, gameSurface_Rect)
-		screen.blit(guiSurface, (0,0))
+		screen.blit(nightOverlay, (0, 0))
+		screen.blit(guiSurface, (0, 0))
 
 
 		pygame.display.update()

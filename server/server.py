@@ -1,9 +1,8 @@
 import socket
 import os
 import json
-import asyncore
 import random
-import pickle
+import threading
 
 BUFFERSIZE = 512
 
@@ -39,59 +38,26 @@ except FileNotFoundError:
 		serverMap.append(
 			{"block": "tree", "pos": [randomPos[0], randomPos[1]]}
 		)
-def updateWorld(message):
-	arr = pickle.loads(message)
-	print(str(arr))
-	playerid = arr[1]
-	x = arr[2]
-	y = arr[3]
 
-	if playerid == 0: return
+def createServer(port, maxPlayers=99):
+	global serv
+	serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	serv.bind(('', port))
+	serv.listen(maxPlayers)
 
-	playerMap[playerid].x = x
-	playerMap[playerid].y = y
+def listenClients():
+	while 1:
+		conn, addr = serv.accept()  # начинаем принимать соединения
+		print('connected:', addr)  # выводим информацию о подключении
+		conn.send(bytes(json.dumps({"size": [512, 512], "yourPos": [64, 64]}), encoding = 'UTF-8'))
+		data = conn.recv(1024)  # принимаем данные от клиента, по 1024 байт
+		print(str(data))
+		# conn.send(data.upper())
 
-	remove = []
+def destroyServer():
+	serv.close()
 
-	for i in outgoing:
-		update = ['playerPos']
-
-		for key, value in playerMap.items():
-			update.append([value.ownerid, value.x, value.y])
-		
-		try:
-			i.send(pickle.dumps(update))
-		except Exception:
-			remove.append(i)
-			continue
-		
-		print ('sent update data')
-
-		for r in remove:
-			outgoing.remove(r)
-
-class MainServer(asyncore.dispatcher):
-	def __init__(self, port):
-		asyncore.dispatcher.__init__(self)
-		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.bind(('', port))
-		self.listen(10)
-	def handle_accept(self):
-		conn, addr = self.accept()
-		print ('Connection address:' + addr[0] + " " + str(addr[1]))
-		outgoing.append(conn)
-		playerid = random.randint(1000, 1000000)
-		playerminion = Player(playerid)
-		playerMap[playerid] = playerminion
-		conn.send(pickle.dumps(['idUpdate', playerid]))
-		SecondaryServer(conn)
-
-class SecondaryServer(asyncore.dispatcher_with_send):
-	def handle_read(self):
-		recievedData = self.recv(BUFFERSIZE)
-		if recievedData:
-			updateWorld(recievedData)
-		else: self.close()
-
-MainServer(4321)
-asyncore.loop()
+createServer(1234, 8)
+bob = threading.Thread(target=listenClients)
+# bob.setDaemon(True)
+bob.start()
